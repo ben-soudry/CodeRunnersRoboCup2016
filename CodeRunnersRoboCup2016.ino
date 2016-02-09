@@ -21,6 +21,8 @@ long lastLCDUpdateTime;
 float lastBallAngle = -1;
 int ballProximity = 0; //0 - No Ball //1 - Far away //2 - Moderate //3 - Close //4 - Very Close
 long startKickTime;
+long startAvoidOutTime;
+
 
 int groundSensor[15];
 
@@ -122,7 +124,7 @@ void loop()
       forwardHasBall();
       break;
     case FORWARD_AVOID_OUTOFBOUNDS:
-
+      forwardAvoidOutOfBounds();
       break; 
     //Defense Strategic States    
     case DEFENSE_MOVE_AND_BLOCK:
@@ -654,13 +656,8 @@ void forwardBallPursuit()
   float ballAngle = readIR();
   lcdLine2 = String(ballProximity);
 
-  //See if the ball was captured
-  bool LG_Status = readLightGate();
-  if(LG_Status == true && ballAngle > 80 && ballAngle < 100 && ballProximity == 4)
-  {
-    state = FORWARD_HAS_BALL; //Transition to Has Ball State
-    startKickTime = millis();
-  }
+
+
   //Ball Pursuit - Chooses speed and compensation modified based on proximity to ball
   int pursuitSpeed = 0;
   float compensationModifier = 0.375;
@@ -725,11 +722,31 @@ void forwardBallPursuit()
       motor(M4, 0);
       digitalWrite(LED1, HIGH);
   }
-
+  ////////
+  //State Transitions
+  ////////
+  //See if the ball was captured using light gate and IR sensors
+  bool LG_Status = readLightGate();
+  if(LG_Status == true && ballAngle > 80 && ballAngle < 100 && ballProximity == 4)
+  {
+    state = FORWARD_HAS_BALL; //Transition to HasBall State
+    startKickTime = millis();
+  }
+  //See if the robot is out of bounds using ground sensor
+  readGroundSensor();
+  for(int i=0; i<15 i++;){
+    if(groundSensor[i] > GS_THRESHOLD)
+    {
+      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      brakeMotors();
+      startAvoidOutTime = millis();
+    }
+  }
 }
 void forwardHasBall()
 {
   lcdLine1 = "HasBall";
+  lcdLine2 = "Forward";
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, HIGH);
   digitalWrite(LED4, LOW);
@@ -759,7 +776,91 @@ void forwardHasBall()
   {
     state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
   }
+}
+void forwardAvoidOutOfBounds()
+{
+  lcdLine1 = "AvoidOut";
+  lcdLine2 = "Forward";
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED4, HIGH);
 
+  readGroundSensor();
+
+  bool lineLeft = false;
+  bool lineRight = false;
+  bool lineFront = false;
+  bool lineBack = false;
+
+  if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+  {
+    lineFront = true;
+  }
+  if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+  {
+    lineRight = true;
+  }
+  if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+  {
+    lineLeft = true;
+  }
+  if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+  {
+    lineBack = true;
+  }
+  //Handling Out of bounds cases
+  if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
+  {
+    drivePID(0,0); //Stop
+  }
+  else if(lineFront == true && lineLeft == true && lineRight == true) //The front, left and right are all detected
+  {
+    drivePID(270,140); //drive back
+  }
+  else if(lineBack == true && lineLeft == true && lineRight == true) //The back, left and right are all detected
+  {
+    drivePID(90,140); //drive forward
+  }
+  else if(lineBack == true && lineFront == true && lineRight == true) //The right, front and back are all detected
+  {
+    drivePID(180,140); //drive left
+  }
+  else if(lineBack == true && lineFront == true && lineLeft == true) //The left, front and back are all detected
+  {
+    drivePID(0,140); //drive right
+  } 
+  else if(lineFront == true && lineRight == true) //The Front and Right are detected (corner)
+  {
+     drivePID(225,140); //drive back and left
+  }
+  else if(lineFront == true && lineLeft == true) //The Front and Left are detected (corner)
+  {
+     drivePID(315,140); //drive back and Right
+  }
+  else if(lineBack == true && lineRight == true) //The Back and Right are detected (corner)
+  {
+     drivePID(135,140); //drive forward and left
+  }
+  else if(lineBack == true && lineLeft == true) //The Back and Left are detected (corner)
+  {
+     drivePID(45,140); //drive forward and Right
+  }
+  else if(lineFront == true) //The front is detected
+  {
+     drivePID(270,140); //drive back
+  }
+  else if(lineBack == true) //The Back is detected
+  {
+     drivePID(90,140); //drive back
+  }
+  else if(lineRight == true) //The Right is detected
+  {
+     drivePID(180,140); //drive left
+  }
+  else if(lineLeft == true) //The Left is detected
+  {
+     drivePID(0,140); //drive Right
+  }
 }
 //////////////
 //State Machine Functions - Defense Strategic States//
