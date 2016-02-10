@@ -734,7 +734,7 @@ void forwardBallPursuit()
   }
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
-  for(int i=0; i<15 i++;){
+  for(int i=0; i<15; i++){
     if(groundSensor[i] > GS_THRESHOLD)
     {
       state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
@@ -776,6 +776,16 @@ void forwardHasBall()
   {
     state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
   }
+  //See if the robot is out of bounds using ground sensor
+  readGroundSensor();
+  for(int i=0; i<15; i++){
+    if(groundSensor[i] > GS_THRESHOLD)
+    {
+      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      brakeMotors();
+      startAvoidOutTime = millis();
+    }
+  }
 }
 void forwardAvoidOutOfBounds()
 {
@@ -808,58 +818,74 @@ void forwardAvoidOutOfBounds()
   {
     lineBack = true;
   }
-  //Handling Out of bounds cases
-  if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
+
+  ////////
+  //State Transitions
+  ////////
+  long currentTime = millis();
+  if(currentTime - startAvoidOutTime < 350)
   {
-    drivePID(0,0); //Stop
+    //Handling Out of bounds cases
+    if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
+    {
+      drivePID(0,0); //Stop
+    }
+    else if(lineFront == true && lineLeft == true && lineRight == true) //The front, left and right are all detected
+    {
+      drivePID(270,140); //drive back
+    }
+    else if(lineBack == true && lineLeft == true && lineRight == true) //The back, left and right are all detected
+    {
+      drivePID(90,140); //drive forward
+    }
+    else if(lineBack == true && lineFront == true && lineRight == true) //The right, front and back are all detected
+    {
+      drivePID(180,140); //drive left
+    }
+    else if(lineBack == true && lineFront == true && lineLeft == true) //The left, front and back are all detected
+    {
+      drivePID(0,140); //drive right
+    } 
+    else if(lineFront == true && lineRight == true) //The Front and Right are detected (corner)
+    {
+       drivePID(225,140); //drive back and left
+    }
+    else if(lineFront == true && lineLeft == true) //The Front and Left are detected (corner)
+    {
+       drivePID(315,140); //drive back and Right
+    }
+    else if(lineBack == true && lineRight == true) //The Back and Right are detected (corner)
+    {
+       drivePID(135,140); //drive forward and left
+    }
+    else if(lineBack == true && lineLeft == true) //The Back and Left are detected (corner)
+    {
+       drivePID(45,140); //drive forward and Right
+    }
+    else if(lineFront == true) //The front is detected
+    {
+       drivePID(270,140); //drive back
+    }
+    else if(lineBack == true) //The Back is detected
+    {
+       drivePID(90,140); //drive back
+    }
+    else if(lineRight == true) //The Right is detected
+    {
+       drivePID(180,140); //drive left
+    }
+    else if(lineLeft == true) //The Left is detected
+    {
+       drivePID(0,140); //drive Right
+    }
   }
-  else if(lineFront == true && lineLeft == true && lineRight == true) //The front, left and right are all detected
+  else if(currentTime - startAvoidOutTime < 650)
   {
-    drivePID(270,140); //drive back
-  }
-  else if(lineBack == true && lineLeft == true && lineRight == true) //The back, left and right are all detected
-  {
-    drivePID(90,140); //drive forward
-  }
-  else if(lineBack == true && lineFront == true && lineRight == true) //The right, front and back are all detected
-  {
-    drivePID(180,140); //drive left
-  }
-  else if(lineBack == true && lineFront == true && lineLeft == true) //The left, front and back are all detected
-  {
-    drivePID(0,140); //drive right
+    drivePID(0,0);
   } 
-  else if(lineFront == true && lineRight == true) //The Front and Right are detected (corner)
+  else
   {
-     drivePID(225,140); //drive back and left
-  }
-  else if(lineFront == true && lineLeft == true) //The Front and Left are detected (corner)
-  {
-     drivePID(315,140); //drive back and Right
-  }
-  else if(lineBack == true && lineRight == true) //The Back and Right are detected (corner)
-  {
-     drivePID(135,140); //drive forward and left
-  }
-  else if(lineBack == true && lineLeft == true) //The Back and Left are detected (corner)
-  {
-     drivePID(45,140); //drive forward and Right
-  }
-  else if(lineFront == true) //The front is detected
-  {
-     drivePID(270,140); //drive back
-  }
-  else if(lineBack == true) //The Back is detected
-  {
-     drivePID(90,140); //drive back
-  }
-  else if(lineRight == true) //The Right is detected
-  {
-     drivePID(180,140); //drive left
-  }
-  else if(lineLeft == true) //The Left is detected
-  {
-     drivePID(0,140); //drive Right
+    state = FORWARD_BALL_PURSUIT;
   }
 }
 //////////////
@@ -1135,7 +1161,7 @@ void brakeMotors() //Stop all drive motors
 float readCompass()
 {
   Serial1.write(compassCommand);
-  delay(10);
+  delay(7); //Change This
   if(Serial1.available())
   {  
     byte byte1 = Serial1.read();
@@ -1268,7 +1294,7 @@ void readGroundSensor()
 {
   for(int i=0; i < 15; i++)
   {
-    groundSensor[i] = readMux(i);
+    groundSensor[i] = readGSMux(i);
   }
 }
 //////////////

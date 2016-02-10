@@ -25,7 +25,7 @@
     #define GS12 12
     #define GS13 13
     #define GS14 14
-	#define GS_THRESHOLD 750
+	#define GS_THRESHOLD 650
     #define LG 15
 	#define LG_THRESHOLD 972
 	//IR Sensor Array
