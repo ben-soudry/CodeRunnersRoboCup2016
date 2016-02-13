@@ -26,6 +26,12 @@ long startKickTime;
 long startAvoidOutTime;
 
 
+ bool driveAbsoluteMode = true; //Adjust drive angle based on rotational error
+ bool lineLeft = false;
+ bool lineRight = false;
+ bool lineFront = false;
+ bool lineBack = false;
+
 int groundSensor[15];
 
 void setup() 
@@ -195,7 +201,7 @@ void loop()
     LCD_SendBuffer();
     lastLCDUpdateTime = millis();
   }
-  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) && ((currentTime - startTime) > 2500))
+  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) && ((currentTime - startTime) > 5000))
   {
     Serial.println("Stop");
     digitalWrite(LED1, LOW);
@@ -686,6 +692,10 @@ void forwardBallPursuit()
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, LOW);
 
+  //Turn on absolute mode
+  driveAbsoluteMode = true;
+  
+  
   if(digitalRead(B3) == HIGH)
   {
     state = START_FORWARD;
@@ -775,13 +785,39 @@ void forwardBallPursuit()
   }
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
-  for(int i=0; i<15; i++){
+  bool lineSeen = false;
+  for(int i=0; i<15; i++)
+  {
     if(groundSensor[i] > GS_THRESHOLD)
     {
-      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
-      brakeMotors();
-      startAvoidOutTime = millis();
+      lineSeen = true;
     }
+  }
+  if(lineSeen == true) //Start the transition
+  {
+       brakeMotors();
+       lineLeft = false;
+       lineRight = false;
+       lineFront = false;
+       lineBack = false;
+        if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+        {
+          lineFront = true;
+        }
+        if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+        {
+          lineRight = true;
+        }
+        if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+        {
+          lineLeft = true;
+        }
+        if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+        {
+          lineBack = true;
+        }
+      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      startAvoidOutTime = millis();
   }
 }
 void forwardHasBall()
@@ -791,26 +827,28 @@ void forwardHasBall()
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, HIGH);
   digitalWrite(LED4, LOW);
-
+  //Turn on absolute mode
+  driveAbsoluteMode = true;
 
   //Timeline
   long currentTime = millis();
   if((currentTime - startKickTime) < 320) 
   {
-    drivePID(90, 190); //Drive Straight Ahead
+    drivePID(90, 170); //Drive Straight Ahead
   }
   else if((currentTime - startKickTime) < 400)
   {
     digitalWrite(KICKER, HIGH); //Kick
-    drivePID(90, 190);
+    drivePID(90, 170);
   }
   else if((currentTime - startKickTime) < 800)
   {
     //Stop and Kicker Off
-    motor(M1, 0);
-    motor(M2, 0);
-    motor(M3, 0);
-    motor(M4, 0);
+    //motor(M1, 0);
+    //motor(M2, 0);
+    //motor(M3, 0);
+    //motor(M4, 0);
+    drivePID(0,0);
     digitalWrite(KICKER, LOW);
   }
   else
@@ -819,13 +857,39 @@ void forwardHasBall()
   }
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
-  for(int i=0; i<15; i++){
+  bool lineSeen = false;
+  for(int i=0; i<15; i++)
+  {
     if(groundSensor[i] > GS_THRESHOLD)
     {
-      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
-      brakeMotors();
-      startAvoidOutTime = millis();
+      lineSeen = true;
     }
+  }
+  if(lineSeen == true) //Start the transition
+  {
+       brakeMotors();
+       lineLeft = false;
+       lineRight = false;
+       lineFront = false;
+       lineBack = false;
+        if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+        {
+          lineFront = true;
+        }
+        if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+        {
+          lineRight = true;
+        }
+        if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+        {
+          lineLeft = true;
+        }
+        if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+        {
+          lineBack = true;
+        }
+      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      startAvoidOutTime = millis();
   }
 }
 void forwardAvoidOutOfBounds()
@@ -835,36 +899,41 @@ void forwardAvoidOutOfBounds()
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, HIGH);
+  //Turn off absolute mode
+  driveAbsoluteMode = false;
 
-  readGroundSensor();
 
-  bool lineLeft = false;
-  bool lineRight = false;
-  bool lineFront = false;
-  bool lineBack = false;
-
-  if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+  //Only react to new sensor data once the robot has reacted to the initial data and is not sliding out of bounds (after 200ms)
+  long currentTime = millis();
+  if(currentTime - startAvoidOutTime > 200) 
   {
-    lineFront = true;
+    lineLeft = false;
+    lineRight = false;
+    lineFront = false;
+    lineBack = false;
+    readGroundSensor();
+    if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+    {
+         lineFront = true;
+    }
+    if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+    {
+         lineRight = true;
+    }
+    if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+    {
+         lineLeft = true;
+    }
+    if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+    {
+         lineBack = true;
+    }
   }
-  if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
-  {
-    lineRight = true;
-  }
-  if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
-  {
-    lineLeft = true;
-  }
-  if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
-  {
-    lineBack = true;
-  }
-
+  
   ////////
   //State Transitions
   ////////
-  long currentTime = millis();
-  if(currentTime - startAvoidOutTime < 350)
+  if(currentTime - startAvoidOutTime < 400)
   {
     //Handling Out of bounds cases
     if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
@@ -919,7 +988,7 @@ void forwardAvoidOutOfBounds()
     {
        drivePID(0,140); //drive Right
     } 
-    else
+    else  //no line
     {
       drivePID(0,0);
     }
@@ -986,9 +1055,16 @@ void drivePID(int dir, int PWR)
       //digitalWrite(LED2, HIGH);
       //digitalWrite(LED4, LOW);
     }
-    //adjust heading based on rotational error
-    int correctedDir = dir-pErr;
-
+    //adjust heading based on rotational error if Absolute Mode is on
+    int correctedDir;
+    if(driveAbsoluteMode)
+    {
+      correctedDir = dir-pErr;
+    }
+    else
+    {
+      correctedDir = dir;
+    }
     drive(correctedDir,-totalRotGain, PWR);
   }
   else //the robot is stopped
