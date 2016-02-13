@@ -1,5 +1,5 @@
 //Pinout.h
-
+#define INVERT 1 //Set this to 1 when compiling for the second robot to invert motors
 //RoboCup 2016 PCB R1 Pinout:
 	//Other constants needed to interface with hardware are included
 //Sensors
@@ -25,9 +25,9 @@
     #define GS12 12
     #define GS13 13
     #define GS14 14
-	#define GS_THRESHOLD 650
+	#define GS_THRESHOLD 850 //750 for first robot
     #define LG 15
-	#define LG_THRESHOLD 972
+	#define LG_THRESHOLD 986 //972 for first robot
 	//IR Sensor Array
 	#define IR_ANI A0
 	#define IR_S0 22
@@ -73,6 +73,7 @@
 
 //Mechanical Control
 	//Motor Drivers
+	
 	#define M1 1
 	#define M1_IN1 31
 	#define M1_IN2 32

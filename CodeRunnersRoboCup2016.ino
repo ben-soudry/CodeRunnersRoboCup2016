@@ -8,6 +8,8 @@ int state = START_FORWARD;
 
 
 float fieldNorth;
+
+
 long startTime;
 
 //LCD Library
@@ -104,11 +106,15 @@ void setup()
 
   delay(50);
   fieldNorth = readCompass();
+ 
+  
+
   lastLCDUpdateTime = millis();
 }
 
 void loop() 
 {
+  long startLoopTime = millis();
   //State Machine
   switch(state)
   { 
@@ -174,6 +180,16 @@ void loop()
 
 
   long currentTime = millis();
+  //Refresh the Compass every 8ms
+  /*
+  if(currentTime - lastCompassUpdateTime > 8)
+  {
+    digitalWrite(LED3, HIGH);
+    refreshCompass();
+    digitalWrite(LED3,LOW);
+  }
+  */
+  //Refresh the LCD at 5Hz
   if(currentTime - lastLCDUpdateTime > 200)
   {
     LCD_SendBuffer();
@@ -197,6 +213,15 @@ void loop()
       //stop
     }
   }
+  long endLoopTime = millis();
+  long loopDuration = endLoopTime - startLoopTime;
+
+  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) || state == FORWARD_AVOID_OUTOFBOUNDS)
+  {
+    lcdLine2 = String(loopDuration);
+  }
+  //Serial.print("loopDuration: ");
+  //Serial.println(loopDuration);
 }
 //////////////
 //State Machine Functions - Menu//
@@ -339,8 +364,8 @@ void compassTest()
   //lcd.print(compassHeading);
   lcdLine2 =  String(compassHeading);
 
-  Serial.print("Compass Heading: ");
-  Serial.println(compassHeading);
+  //Serial.print("Compass Heading: ");
+  //Serial.println(compassHeading);
 
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
@@ -349,15 +374,13 @@ void compassTest()
   else if(digitalRead(B1) == HIGH)
   {
     state = IR_TEST;
-    delay(500);
-    
+    delay(500); 
   }
   else if(digitalRead(B2) == HIGH)
   {
     state = CMPS_CALIBRATION;
     delay(500);
   }
-  //delay(20);
 }
 void compassCalibration()
 {
@@ -424,6 +447,29 @@ void compassCalibration()
     byte confirm4;
     Serial.println("Press Button to finish when you cannot get further LED flashes");
     lcd.print("Rotate..");
+
+    delay(500);
+    //spin
+    motor(M1, 36);
+    motor(M2, 36);
+    motor(M3, -36);
+    motor(M4, -36);
+    delay(4000);
+    motor(M1, 0);
+    motor(M2, 0);
+    motor(M3, 0);
+    motor(M4, 0);
+    delay(500);
+    motor(M1, -36);
+    motor(M2, -36);
+    motor(M3, 36);
+    motor(M4, 36);
+    delay(4000);
+    motor(M1, 0);
+    motor(M2, 0);
+    motor(M3, 0);
+    motor(M4, 0);
+    
     while(digitalRead(B3)== LOW){  
     }
     Serial1.write(endCalibration);
@@ -524,7 +570,6 @@ void groundSensorCalibration()
     state = LG_TEST;
     delay(500);
   }
-  
 }
 void lightGateTest()
 {
@@ -573,7 +618,6 @@ void lightGateTest()
     state = LG_CALIBRATION;
     delay(500);
   }
-  
 }
 void lightGateCalibration()
 {
@@ -599,7 +643,6 @@ void lightGateCalibration()
     state = KICKER_TEST;
     delay(500);
   }
-  
 }
 void kickerTest()
 {
@@ -630,13 +673,12 @@ void kickerTest()
   {
     state = START_FORWARD;
     delay(500);
-  }
-  
+  }  
 }
+
 //////////////
 //State Machine Functions - Forward Strategic States//
 //////////////
-
 void forwardBallPursuit()
 {
   lcdLine1 = "BallPur";
@@ -654,7 +696,7 @@ void forwardBallPursuit()
       delay(500);
   } 
   float ballAngle = readIR();
-  lcdLine2 = String(ballProximity);
+  
 
 
 
@@ -712,7 +754,6 @@ void forwardBallPursuit()
     }
    
     drivePID(pursuitAngle,pursuitSpeed);
-
   }
   else
   {
@@ -746,7 +787,7 @@ void forwardBallPursuit()
 void forwardHasBall()
 {
   lcdLine1 = "HasBall";
-  lcdLine2 = "Forward";
+  //lcdLine2 = "Forward";
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, HIGH);
   digitalWrite(LED4, LOW);
@@ -790,7 +831,7 @@ void forwardHasBall()
 void forwardAvoidOutOfBounds()
 {
   lcdLine1 = "AvoidOut";
-  lcdLine2 = "Forward";
+  //lcdLine2 = "Forward";
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, HIGH);
@@ -877,6 +918,10 @@ void forwardAvoidOutOfBounds()
     else if(lineLeft == true) //The Left is detected
     {
        drivePID(0,140); //drive Right
+    } 
+    else
+    {
+      drivePID(0,0);
     }
   }
   else if(currentTime - startAvoidOutTime < 650)
@@ -903,6 +948,7 @@ void drivePID(int dir, int PWR)
 {
   float targetVal = fieldNorth; //make the setpoint field north
 
+  //float currentVal = readCompass();
   float currentVal = readCompass();
   //lcdLine2 = String(currentVal);
   //P - Proportional
@@ -949,8 +995,8 @@ void drivePID(int dir, int PWR)
   {
     if((totalRotGain > 24 || totalRotGain < -24) && currentVal != -1) //20
     {  
-      Serial.print(" Total Gain:");
-      Serial.println(totalRotGain);
+      //Serial.print(" Total Gain:");
+      //Serial.println(totalRotGain);
       totalRotGain = constrain(totalRotGain,-60,60);
       //digitalWrite(LED2, LOW);
       //digitalWrite(LED4, HIGH);
@@ -958,8 +1004,8 @@ void drivePID(int dir, int PWR)
     }
     else
     {
-      Serial.print(" Total Gain:");
-      Serial.println(totalRotGain);
+      //Serial.print(" Total Gain:");
+      //Serial.println(totalRotGain);
       //digitalWrite(LED2, HIGH);
       //digitalWrite(LED4, LOW);
       
@@ -1073,6 +1119,19 @@ void motor(int motorID, int PWR) //produces low level signals to each individual
     Serial.println("Invalid motor power");
     return; //error 
   }
+  //Handling Inverted motor control for second robot
+  if(INVERT)
+  {
+    if(motorDirection == true)
+    {
+      motorDirection = false;
+    }
+    else
+    {
+      motorDirection = true;
+    }
+  }
+
   //Selecting a motor to run
   if(motorID == M1)
   {
@@ -1161,7 +1220,7 @@ void brakeMotors() //Stop all drive motors
 float readCompass()
 {
   Serial1.write(compassCommand);
-  delay(7); //Change This
+  delay(10); //Change This
   if(Serial1.available())
   {  
     byte byte1 = Serial1.read();
@@ -1184,7 +1243,7 @@ float readCompass()
 bool readLightGate()
 {
   int lightGateVal = readGSMux(LG);
-  Serial.print("Raw LG: "); Serial.println(lightGateVal);
+  //Serial.print("Raw LG: "); Serial.println(lightGateVal);
   if(lightGateVal > LG_THRESHOLD)
   {
     return true;
@@ -1245,7 +1304,7 @@ float readIR()
   //perform insertion sort
   insertSort(IR_sorted, IR_ID); 
 
-  Serial.print("IR Sorted 0: "); Serial.println(IR_sorted[0]);
+  //Serial.print("IR Sorted 0: "); Serial.println(IR_sorted[0]);
   //Update Ball Proximity
   if(IR_sorted[0] < IR_min || IR_sorted[0] > IR_max) //if none of the sensors see the ball
   {
@@ -1419,12 +1478,12 @@ int readGSMux(int channel) //selects the given channel on the ground sensor mult
 void LCD_SendBuffer()
 {
   lcd.clear();
-  digitalWrite(LED3, HIGH);
+  //digitalWrite(LED3, HIGH);
   lcd.setCursor(0,0);
   lcd.print(lcdLine1);
   lcd.setCursor(0,1);
   lcd.print(lcdLine2);
-  digitalWrite(LED3, LOW);
+  //digitalWrite(LED3, LOW);
 }
 
 //////////////
