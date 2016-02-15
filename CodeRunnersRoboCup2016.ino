@@ -32,6 +32,11 @@ long startAvoidOutTime;
  bool lineFront = false;
  bool lineBack = false;
 
+ bool blackLineLeft = false;
+ bool blackLineRight = false;
+ bool blackLineFront = false;
+ bool blackLineBack = false;
+
 int groundSensor[15];
 
 void setup() 
@@ -110,7 +115,7 @@ void setup()
   pinMode(B2, INPUT);
   pinMode(B3, INPUT);
 
-  delay(50);
+  delay(100);
   fieldNorth = readCompass();
  
   
@@ -140,16 +145,16 @@ void loop()
       break; 
     //Defense Strategic States    
     case DEFENSE_MOVE_AND_BLOCK:
-
+      defenseMoveAndBlock();
       break; 
     case DEFENSE_HAS_BALL:
 
       break;
     case DEFENSE_AVOID_OUTOFBOX:
-
+      defenseAvoidOutOfBox();
       break; 
     case DEFENSE_AVOID_OUTOFBOUNDS:
-
+      defenseAvoidOutOfBounds();
       break; 
     //Menu States
     case START_FORWARD:
@@ -201,7 +206,7 @@ void loop()
     LCD_SendBuffer();
     lastLCDUpdateTime = millis();
   }
-  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) && ((currentTime - startTime) > 5000))
+  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL || state == DEFENSE_MOVE_AND_BLOCK) && ((currentTime - startTime) > 4000))
   {
     Serial.println("Stop");
     digitalWrite(LED1, LOW);
@@ -272,8 +277,10 @@ void startDefense()
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
-    state = DEFENSE_MOVE_AND_BLOCK; //Change state to the default defense state
     delay(500);
+    startTime = millis();
+    fieldNorth = readCompass();
+    state = DEFENSE_MOVE_AND_BLOCK; //Change state to the default defense state
   }
   else if(digitalRead(B1) == HIGH)
   {
@@ -456,21 +463,37 @@ void compassCalibration()
 
     delay(500);
     //spin
-    motor(M1, 36);
-    motor(M2, 36);
-    motor(M3, -36);
-    motor(M4, -36);
-    delay(4000);
+    for(int i=0; i<10; i++)
+    {
+      motor(M1, 36);
+      motor(M2, 36);
+      motor(M3, -36);
+      motor(M4, -36);
+      delay(400);
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
+      delay(400);
+    }
     motor(M1, 0);
     motor(M2, 0);
     motor(M3, 0);
     motor(M4, 0);
     delay(500);
-    motor(M1, -36);
-    motor(M2, -36);
-    motor(M3, 36);
-    motor(M4, 36);
-    delay(4000);
+    for(int i=0; i<10; i++)
+    {
+      motor(M1, -36);
+      motor(M2, -36);
+      motor(M3, 36);
+      motor(M4, 36);
+      delay(400);
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
+      delay(400);
+    }
     motor(M1, 0);
     motor(M2, 0);
     motor(M3, 0);
@@ -505,43 +528,89 @@ void compassCalibration()
     delay(500);
   }
 }
+bool GS_TestMode = 0; //0 for testing white lines
 void groundSensorTest()
 {
   lcdLine1 = "GS Test ";
 
-  lcdLine2 = "";
   readGroundSensor();
-  if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+  if(GS_TestMode == 0)
   {
-    digitalWrite(LED1, HIGH);
+    lcdLine2 = "White";
+    if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
+    {
+      digitalWrite(LED1, HIGH);
+    }
+    else{
+      digitalWrite(LED1, LOW);
+    }
+    if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
+    {
+      digitalWrite(LED2, HIGH);
+    }
+    else{
+      digitalWrite(LED2, LOW);
+    }
+    if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
+    {
+      digitalWrite(LED4, HIGH);
+    }
+    else{
+      digitalWrite(LED4, LOW);
+    }
+    if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
+    {
+      digitalWrite(LED3, HIGH);
+    }
+    else{
+      digitalWrite(LED3, LOW);
+    }
   }
-  else{
-    digitalWrite(LED1, LOW);
-  }
-  if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+  else if(GS_TestMode == 1)
   {
-    digitalWrite(LED2, HIGH);
-  }
-  else{
-    digitalWrite(LED2, LOW);
-  }
-  if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
-  {
-    digitalWrite(LED4, HIGH);
-  }
-  else{
-    digitalWrite(LED4, LOW);
-  }
-  if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
-  {
-    digitalWrite(LED3, HIGH);
-  }
-  else{
-    digitalWrite(LED3, LOW);
+    lcdLine2 = "Black";
+    if(groundSensor[GS0] < GS_THRESHOLD_BLACK || groundSensor[GS1] < GS_THRESHOLD_BLACK || groundSensor[GS2] < GS_THRESHOLD_BLACK)
+    {
+      digitalWrite(LED1, HIGH);
+    }
+    else{
+      digitalWrite(LED1, LOW);
+    }
+    if(groundSensor[GS3] < GS_THRESHOLD_BLACK || groundSensor[GS4] < GS_THRESHOLD_BLACK || groundSensor[GS5] < GS_THRESHOLD_BLACK)// || groundSensor[GS6] < GS_THRESHOLD_BLACK)
+    {
+      digitalWrite(LED2, HIGH);
+    }
+    else{
+      digitalWrite(LED2, LOW);
+    }
+    if(groundSensor[GS7] < GS_THRESHOLD_BLACK || groundSensor[GS8] < GS_THRESHOLD_BLACK || groundSensor[GS9] < GS_THRESHOLD_BLACK || groundSensor[GS10] < GS_THRESHOLD_BLACK)
+    {
+      digitalWrite(LED4, HIGH);
+    }
+    else{
+      digitalWrite(LED4, LOW);
+    }
+    if(groundSensor[GS11] < GS_THRESHOLD_BLACK || groundSensor[GS12] < GS_THRESHOLD_BLACK || groundSensor[GS13] < GS_THRESHOLD_BLACK || groundSensor[GS14] < GS_THRESHOLD_BLACK)
+    {
+      digitalWrite(LED3, HIGH);
+    }
+    else{
+      digitalWrite(LED3, LOW);
+    }
   }
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
+    //toggle GS Test Mode
+    if(GS_TestMode == 0)
+    {
+      GS_TestMode = 1;
+    }
+    else
+    {
+      GS_TestMode = 0;
+    }
+    delay(500);
   }
   else if(digitalRead(B1) == HIGH)
   {
@@ -710,9 +779,9 @@ void forwardBallPursuit()
 
 
 
-  //Ball Pursuit - Chooses speed and compensation modified based on proximity to ball
+  //Ball Pursuit - Chooses speed and compensation modifier based on proximity to ball
   int pursuitSpeed = 0;
-  float compensationModifier = 0.375;
+  float compensationModifier = 0.375; //this was the defauly
   if(ballProximity == 4)
   {
     pursuitSpeed = 110;
@@ -721,7 +790,7 @@ void forwardBallPursuit()
   else if(ballProximity == 3)
   {
     pursuitSpeed = 135;
-    compensationModifier = 0.375; //large differences in modifier creates less smooth motion
+    compensationModifier = 0.4; //large differences in modifier creates less smooth motion
   }
   else if(ballProximity == 2)
   {
@@ -746,21 +815,21 @@ void forwardBallPursuit()
       ballAngle = ballAngle + 360;
     }
     float pursuitAngle;
-    if(ballAngle >= 80 && ballAngle <= 100) // Ball straight ahead
+    if(ballAngle >= 85 && ballAngle <= 95) // Ball straight ahead
     {
       pursuitAngle = ballAngle;
     }
-    else if(ballAngle > 100 && ballAngle <= 270) // Ball is on the left of robot
+    else if(ballAngle > 95 && ballAngle <= 270) // Ball is on the left of robot
     {
-        pursuitAngle = ballAngle + compensationModifier*(ballAngle - 100); //Add compensation
+        pursuitAngle = ballAngle + compensationModifier*(ballAngle - 95); //Add compensation
     }
-    else if((ballAngle < 80 && ballAngle >= 0)) // Ball is on the right of robot
+    else if((ballAngle < 85 && ballAngle >= 0)) // Ball is on the right of robot
     {
-      pursuitAngle = ballAngle - compensationModifier*(80 - ballAngle);
+      pursuitAngle = ballAngle - compensationModifier*(85 - ballAngle);
     }
     else if (ballAngle <= 360 && ballAngle > 270)
     {
-      pursuitAngle = ballAngle - compensationModifier*80 - compensationModifier*(360 - ballAngle);
+      pursuitAngle = ballAngle - compensationModifier*85 - compensationModifier*(360 - ballAngle);
     }
    
     drivePID(pursuitAngle,pursuitSpeed);
@@ -788,7 +857,7 @@ void forwardBallPursuit()
   bool lineSeen = false;
   for(int i=0; i<15; i++)
   {
-    if(groundSensor[i] > GS_THRESHOLD)
+    if(groundSensor[i] > GS_THRESHOLD_WHITE)
     {
       lineSeen = true;
     }
@@ -800,19 +869,19 @@ void forwardBallPursuit()
        lineRight = false;
        lineFront = false;
        lineBack = false;
-        if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+        if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
         }
-        if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+        if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
         {
           lineRight = true;
         }
-        if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+        if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
         {
           lineLeft = true;
         }
-        if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+        if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
         }
@@ -860,7 +929,7 @@ void forwardHasBall()
   bool lineSeen = false;
   for(int i=0; i<15; i++)
   {
-    if(groundSensor[i] > GS_THRESHOLD)
+    if(groundSensor[i] > GS_THRESHOLD_WHITE)
     {
       lineSeen = true;
     }
@@ -872,19 +941,19 @@ void forwardHasBall()
        lineRight = false;
        lineFront = false;
        lineBack = false;
-        if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+        if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
         }
-        if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+        if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
         {
           lineRight = true;
         }
-        if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+        if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
         {
           lineLeft = true;
         }
-        if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+        if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
         }
@@ -902,7 +971,6 @@ void forwardAvoidOutOfBounds()
   //Turn off absolute mode
   driveAbsoluteMode = false;
 
-
   //Only react to new sensor data once the robot has reacted to the initial data and is not sliding out of bounds (after 200ms)
   long currentTime = millis();
   if(currentTime - startAvoidOutTime > 200) 
@@ -912,24 +980,23 @@ void forwardAvoidOutOfBounds()
     lineFront = false;
     lineBack = false;
     readGroundSensor();
-    if(groundSensor[GS0] > GS_THRESHOLD || groundSensor[GS1] > GS_THRESHOLD || groundSensor[GS2] > GS_THRESHOLD)
+    if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
     {
          lineFront = true;
     }
-    if(groundSensor[GS3] > GS_THRESHOLD || groundSensor[GS4] > GS_THRESHOLD || groundSensor[GS5] > GS_THRESHOLD || groundSensor[GS6] > GS_THRESHOLD)
+    if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
     {
          lineRight = true;
     }
-    if(groundSensor[GS7] > GS_THRESHOLD || groundSensor[GS8] > GS_THRESHOLD || groundSensor[GS9] > GS_THRESHOLD || groundSensor[GS10] > GS_THRESHOLD)
+    if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
     {
          lineLeft = true;
     }
-    if(groundSensor[GS11] > GS_THRESHOLD || groundSensor[GS12] > GS_THRESHOLD || groundSensor[GS13] > GS_THRESHOLD || groundSensor[GS14] > GS_THRESHOLD)
+    if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
     {
          lineBack = true;
     }
   }
-  
   ////////
   //State Transitions
   ////////
@@ -978,7 +1045,7 @@ void forwardAvoidOutOfBounds()
     }
     else if(lineBack == true) //The Back is detected
     {
-       drivePID(90,140); //drive back
+       drivePID(90,140); //drive forward
     }
     else if(lineRight == true) //The Right is detected
     {
@@ -1005,8 +1072,361 @@ void forwardAvoidOutOfBounds()
 //////////////
 //State Machine Functions - Defense Strategic States//
 //////////////
+void defenseMoveAndBlock()
+{
+  lcdLine1 = "Block";
+  //lcdLine2 = "Forward";
+  digitalWrite(LED1, HIGH);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED4, LOW);
+  //Turn on absolute mode
+  driveAbsoluteMode = true;
 
-//////////////
+  if(digitalRead(B3) == HIGH)
+  {
+      state = START_DEFENSE;
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
+      delay(500);
+  } 
+  float ballAngle = readIR();
+  //Handling block cases
+  if(ballAngle != -1)
+  {
+    if(ballAngle > 80 && ballAngle < 100)
+    {
+      drivePID(0,0);
+    }
+    else if(ballAngle > 60 && ballAngle < 80)
+    {
+      drivePID(0,80);
+    }
+    else if(ballAngle > 100 && ballAngle < 120)
+    {
+      drivePID(180,80);
+    }
+    else if(ballAngle > 0 && ballAngle < 60)
+    {
+      drivePID(0,100);
+    }
+    else if(ballAngle > 120 && ballAngle < 180)
+    {
+      drivePID(180,100);
+    }
+    else
+    {
+      drivePID(0,0);
+    }
+  }
+  else
+  {
+    drivePID(0,0);
+  }
+  //Back up if the sonar is too far away
+  int US5_val = readSonar(US5);
+  /*
+  if(US5_val > 34)
+  {
+    drivePID(270,90);
+  }
+  */
+  //State Transition
+  //See if the robot is out of the box using ground sensor
+  readGroundSensor();
+  bool blackLineSeen = false;
+  for(int i=0; i<15; i++)
+  {
+    if(groundSensor[i] < GS_THRESHOLD_BLACK)
+    {
+      blackLineSeen = true;
+    }
+  }
+  if(blackLineSeen == true) //Start the transition
+  {
+       brakeMotors();
+       lineLeft = false;
+       lineRight = false;
+       lineFront = false;
+       lineBack = false;
+        if(groundSensor[GS0] < GS_THRESHOLD_BLACK || groundSensor[GS1] < GS_THRESHOLD_BLACK || groundSensor[GS2] < GS_THRESHOLD_BLACK)
+        {
+          blackLineFront = true;
+        }
+        if(groundSensor[GS3] < GS_THRESHOLD_BLACK || groundSensor[GS4] < GS_THRESHOLD_BLACK || groundSensor[GS5] < GS_THRESHOLD_BLACK || groundSensor[GS6] < GS_THRESHOLD_BLACK)
+        {
+          blackLineRight = true;
+        }
+        if(groundSensor[GS7] < GS_THRESHOLD_BLACK || groundSensor[GS8] < GS_THRESHOLD_BLACK || groundSensor[GS9] < GS_THRESHOLD_BLACK || groundSensor[GS10] < GS_THRESHOLD_BLACK)
+        {
+          blackLineLeft = true;
+        }
+        if(groundSensor[GS11] < GS_THRESHOLD_BLACK || groundSensor[GS12] < GS_THRESHOLD_BLACK || groundSensor[GS13] < GS_THRESHOLD_BLACK || groundSensor[GS14] < GS_THRESHOLD_BLACK)
+        {
+          blackLineBack = true;
+        }
+      state = DEFENSE_AVOID_OUTOFBOX; //Transition to avoid out of bounds state
+      startAvoidOutTime = millis();
+  }
+  //See if the robot is out of bounds using ground sensor
+  readGroundSensor();
+  bool whiteLineSeen = false;
+  for(int i=0; i<15; i++)
+  {
+    if(groundSensor[i] > GS_THRESHOLD_WHITE)
+    {
+      whiteLineSeen = true;
+    }
+  }
+  if(whiteLineSeen == true) //Start the transition
+  {
+       brakeMotors();
+       lineLeft = false;
+       lineRight = false;
+       lineFront = false;
+       lineBack = false;
+        if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
+        {
+          lineFront = true;
+        }
+        if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
+        {
+          lineRight = true;
+        }
+        if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
+        {
+          lineLeft = true;
+        }
+        if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
+        {
+          lineBack = true;
+        }
+      state = DEFENSE_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      startAvoidOutTime = millis();
+  }
+}
+void defenseHasBall()
+{
+
+}
+void defenseAvoidOutOfBox()
+{
+  lcdLine1 = "AvoidBox";
+  //lcdLine2 = "Forward";
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED4, HIGH);
+  //Turn off absolute mode
+  driveAbsoluteMode = false;
+
+  //Only react to new sensor data once the robot has reacted to the initial data and is not sliding out of bounds (after 200ms)
+  long currentTime = millis();
+  if(currentTime - startAvoidOutTime > 300) 
+  {
+    blackLineLeft = false;
+    blackLineRight = false;
+    blackLineFront = false;
+    blackLineBack = false;
+    readGroundSensor();
+    if(groundSensor[GS0] < GS_THRESHOLD_BLACK || groundSensor[GS1] < GS_THRESHOLD_BLACK || groundSensor[GS2] < GS_THRESHOLD_BLACK)
+    {
+      blackLineFront = true;
+    }
+    if(groundSensor[GS3] < GS_THRESHOLD_BLACK || groundSensor[GS4] < GS_THRESHOLD_BLACK || groundSensor[GS5] < GS_THRESHOLD_BLACK || groundSensor[GS6] < GS_THRESHOLD_BLACK)
+    {
+      blackLineRight = true;
+    }
+    if(groundSensor[GS7] < GS_THRESHOLD_BLACK || groundSensor[GS8] < GS_THRESHOLD_BLACK || groundSensor[GS9] < GS_THRESHOLD_BLACK || groundSensor[GS10] < GS_THRESHOLD_BLACK)
+    {
+      blackLineLeft = true;
+    }
+    if(groundSensor[GS11] < GS_THRESHOLD_BLACK || groundSensor[GS12] < GS_THRESHOLD_BLACK || groundSensor[GS13] < GS_THRESHOLD_BLACK || groundSensor[GS14] < GS_THRESHOLD_BLACK)
+    {
+      blackLineBack = true;
+    }
+  }
+  ////////
+  //State Transitions
+  ////////
+  if(currentTime - startAvoidOutTime < 500)
+  {
+    //Handling Out of bonds cases
+    if(blackLineFront == true && blackLineBack == true && blackLineLeft == true && blackLineRight == true) //All sides detected - this should never happen
+    {
+      drivePID(0,0); //Stop
+    }
+    else if(blackLineFront == true && blackLineLeft == true && blackLineRight == true) //The front, left and right are all detected
+    {
+      drivePID(270,90); //drive back
+    }
+    else if(blackLineBack == true && blackLineLeft == true && blackLineRight == true) //The back, left and right are all detected
+    {
+      drivePID(270,90); //drive back
+    }
+    else if(blackLineBack == true && blackLineFront == true && blackLineRight == true) //The right, front and back are all detected
+    {
+      drivePID(180,90); //drive left
+    }
+    else if(blackLineBack == true && blackLineFront == true && blackLineLeft == true) //The left, front and back are all detected
+    {
+      drivePID(0,90); //drive right
+    } 
+    else if(blackLineFront == true && blackLineRight == true) //The Front and Right are detected (corner)
+    {
+       drivePID(225,90); //drive back and left
+    }
+    else if(blackLineFront == true && blackLineLeft == true) //The Front and Left are detected (corner)
+    {
+       drivePID(315,90); //drive back and right
+    }
+    else if(blackLineBack == true && blackLineRight == true) //The Back and Right are detected (corner)
+    {
+       drivePID(315,90); //drive back and right
+    }
+    else if(blackLineBack == true && blackLineLeft == true) //The Back and Left are detected (corner)
+    {
+       drivePID(225,90); //drive back and left
+    }
+    else if(blackLineFront == true) //The front is detected
+    {
+       drivePID(270,90); //drive back
+    }
+    else if(blackLineBack == true) //The Back is detected
+    {
+       drivePID(270,90); //drive back
+    }
+    else if(blackLineRight == true) //The Right is detected
+    {
+       drivePID(180,90); //drive left
+    }
+    else if(blackLineLeft == true) //The Left is detected
+    {
+       drivePID(0,90); //drive Right
+    } 
+    else  //no line
+    {
+      drivePID(0,0);
+    }
+  }
+  else if(currentTime - startAvoidOutTime < 650)
+  {
+    drivePID(0,0);
+  } 
+  else
+  {
+    state = DEFENSE_MOVE_AND_BLOCK;
+  }
+}
+void defenseAvoidOutOfBounds()
+{
+  lcdLine1 = "AvoidOut";
+  //lcdLine2 = "Forward";
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED4, HIGH);
+  //Turn off absolute mode
+  driveAbsoluteMode = false;
+
+  //Only react to new sensor data once the robot has reacted to the initial data and is not sliding out of bounds (after 200ms)
+  long currentTime = millis();
+  if(currentTime - startAvoidOutTime > 300) 
+  {
+    lineLeft = false;
+    lineRight = false;
+    lineFront = false;
+    lineBack = false;
+    readGroundSensor();
+    if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
+    {
+        lineFront = true;
+    }
+    if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
+    {
+        lineRight = true;
+    }
+    if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
+    {
+        lineLeft = true;
+    }
+    if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
+    {
+        lineBack = true;
+    }
+  }
+  ////////
+  //State Transitions
+  ////////
+  if(currentTime - startAvoidOutTime < 500)
+  {
+    //Handling Out of bounds cases
+    if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
+    {
+      drivePID(0,0); //Stop
+    }
+    else if(lineFront == true && lineLeft == true && lineRight == true) //The front, left and right are all detected
+    {
+      drivePID(270,90); //drive back
+    }
+    else if(lineBack == true && lineLeft == true && lineRight == true) //The back, left and right are all detected
+    {
+      drivePID(90,90); //drive forward
+    }
+    else if(lineBack == true && lineFront == true && lineRight == true) //The right, front and back are all detected
+    {
+      drivePID(180,90); //drive left
+    }
+    else if(lineBack == true && lineFront == true && lineLeft == true) //The left, front and back are all detected
+    {
+      drivePID(0,90); //drive right
+    } 
+    else if(lineFront == true && lineRight == true) //The Front and Right are detected (corner)
+    {
+       drivePID(225,90); //drive back and left
+    }
+    else if(lineFront == true && lineLeft == true) //The Front and Left are detected (corner)
+    {
+       drivePID(315,90); //drive back and Right
+    }
+    else if(lineBack == true && lineRight == true) //The Back and Right are detected (corner)
+    {
+       drivePID(135,90); //drive forward and left
+    }
+    else if(lineBack == true && lineLeft == true) //The Back and Left are detected (corner)
+    {
+       drivePID(45,90); //drive forward and Right
+    }
+    else if(lineFront == true) //The front is detected
+    {
+       drivePID(270,90); //drive back
+    }
+    else if(lineBack == true) //The Back is detected
+    {
+       drivePID(90,90); //drive forward
+    }
+    else if(lineRight == true) //The Right is detected
+    {
+       drivePID(180,90); //drive left
+    }
+    else if(lineLeft == true) //The Left is detected
+    {
+       drivePID(0,90); //drive Right
+    } 
+    else  //no line
+    {
+      drivePID(0,0);
+    }
+  }
+  else if(currentTime - startAvoidOutTime < 650)
+  {
+    drivePID(0,0);
+  } 
+  else
+  {
+    state = DEFENSE_MOVE_AND_BLOCK;
+  }
+}
+/////////////
 //Functions for Controlling Robot Drive//
 //////////////
 float kp = 4.0;  
@@ -1344,8 +1764,16 @@ int IR_unsorted[20]; //raw sensor data from 20 IR sensors
 int IR_sorted[20]; 
 int IR_ID[20];
 
-
-
+////Read Sonar Sensors
+int readSonar(int sonarPin)
+{
+  int US_raw = analogRead(sonarPin);
+  int US_val = US_raw/0.782; 
+  //Serial.print("US: ");
+  //Serial.print(US);
+  //Serial.println("cm");
+  return US_val;
+}
 float readIR()
 {
   //Reading from the 20 IR recievers

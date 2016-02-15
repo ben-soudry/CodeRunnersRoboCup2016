@@ -25,7 +25,8 @@
     #define GS12 12
     #define GS13 13
     #define GS14 14
-	#define GS_THRESHOLD 850 //750 for first robot
+	#define GS_THRESHOLD_WHITE 750 //Lower this //750 for first robot
+	#define GS_THRESHOLD_BLACK 380 //365 //Change this
     #define LG 15
 	#define LG_THRESHOLD 986 //972 for first robot
 	//IR Sensor Array
