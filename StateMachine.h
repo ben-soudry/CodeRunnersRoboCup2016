@@ -8,9 +8,9 @@
 #define CMPS_TEST 4        //4 - Compass Test
 #define CMPS_CALIBRATION 5 //5 - Compass Calibration
 #define GS_TEST 6          //6 - GS Test
-#define GS_CALIBRATION 7   //7 - GS Calibration
+#define GS_CALIBRATION 7   //7 - GS Calibration - Not implemented currently
 #define LG_TEST 8          //8 - Light Gate Test
-#define LG_CALIBRATION 9   //9 - Light Gate Calibration
+#define US_TEST 9   		//9 - Ultrasonic Test
 #define KICKER_TEST 10     //10 - Kicker Test
 
 #define FORWARD_BALL_PURSUIT 100       //100 - Forward Ball Pursuit

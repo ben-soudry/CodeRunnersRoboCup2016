@@ -39,6 +39,7 @@ long startAvoidOutTime;
 
 int groundSensor[15];
 
+
 void setup() 
 {
   Serial.begin(9600);
@@ -181,8 +182,8 @@ void loop()
     case LG_TEST:
       lightGateTest();
       break;
-    case LG_CALIBRATION:
-      lightGateCalibration();
+    case US_TEST:
+      ultrasonicTest();
       break;
     case KICKER_TEST:
       kickerTest();
@@ -572,13 +573,51 @@ void groundSensorTest()
     if(groundSensor[GS0] < GS_THRESHOLD_BLACK || groundSensor[GS1] < GS_THRESHOLD_BLACK || groundSensor[GS2] < GS_THRESHOLD_BLACK)
     {
       digitalWrite(LED1, HIGH);
+       if(groundSensor[GS0] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS0: ");
+          Serial.println(groundSensor[GS0]);
+       }
+       if(groundSensor[GS1] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS1: ");
+          Serial.println(groundSensor[GS1]);
+       }
+      if(groundSensor[GS2] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS2: ");
+          Serial.println(groundSensor[GS2]);
+       }
     }
-    else{
+    else
+    {
       digitalWrite(LED1, LOW);
     }
     if(groundSensor[GS3] < GS_THRESHOLD_BLACK || groundSensor[GS4] < GS_THRESHOLD_BLACK || groundSensor[GS5] < GS_THRESHOLD_BLACK)// || groundSensor[GS6] < GS_THRESHOLD_BLACK)
     {
       digitalWrite(LED2, HIGH);
+      if(groundSensor[GS3] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS3: ");
+          Serial.println(groundSensor[GS3]);
+       }
+       if(groundSensor[GS4] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS4: ");
+          Serial.println(groundSensor[GS4]);
+       }
+       if(groundSensor[GS5] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS5: ");
+          Serial.println(groundSensor[GS5]);
+       }
+       /*
+      if(groundSensor[GS6] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS6: ");
+          Serial.println(groundSensor[GS6]);
+       }
+       */
     }
     else{
       digitalWrite(LED2, LOW);
@@ -586,13 +625,55 @@ void groundSensorTest()
     if(groundSensor[GS7] < GS_THRESHOLD_BLACK || groundSensor[GS8] < GS_THRESHOLD_BLACK || groundSensor[GS9] < GS_THRESHOLD_BLACK || groundSensor[GS10] < GS_THRESHOLD_BLACK)
     {
       digitalWrite(LED4, HIGH);
+       if(groundSensor[GS7] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS7: ");
+          Serial.println(groundSensor[GS7]);
+       }
+       if(groundSensor[GS8] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS8: ");
+          Serial.println(groundSensor[GS8]);
+       }
+       if(groundSensor[GS9] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS9: ");
+          Serial.println(groundSensor[GS9]);
+       }
+       if(groundSensor[GS10] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS10: ");
+          Serial.println(groundSensor[GS0]);
+       }
     }
     else{
       digitalWrite(LED4, LOW);
     }
-    if(groundSensor[GS11] < GS_THRESHOLD_BLACK || groundSensor[GS12] < GS_THRESHOLD_BLACK || groundSensor[GS13] < GS_THRESHOLD_BLACK || groundSensor[GS14] < GS_THRESHOLD_BLACK)
+    if(/*groundSensor[GS11] < GS_THRESHOLD_BLACK ||*/ groundSensor[GS12] < GS_THRESHOLD_BLACK || groundSensor[GS13] < GS_THRESHOLD_BLACK || groundSensor[GS14] < GS_THRESHOLD_BLACK)
     {
       digitalWrite(LED3, HIGH);
+      /*
+       if(groundSensor[GS11] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS11: ");
+          Serial.println(groundSensor[GS11]);
+       }
+       */
+       if(groundSensor[GS12] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS12: ");
+          Serial.println(groundSensor[GS12]);
+       }
+       if(groundSensor[GS13] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS13: ");
+          Serial.println(groundSensor[GS13]);
+       }
+       if(groundSensor[GS14] < GS_THRESHOLD_BLACK)
+       {
+          Serial.print("Black Line at GS14: ");
+          Serial.println(groundSensor[GS14]);
+       }
     }
     else{
       digitalWrite(LED3, LOW);
@@ -690,23 +771,60 @@ void lightGateTest()
   }
   else if(digitalRead(B2) == HIGH)
   {
-    state = LG_CALIBRATION;
+    state = US_TEST;
     delay(500);
   }
 }
-void lightGateCalibration()
+int US_beingTested = 1; //This keeps track of which ultrasonic sensor is currently being tested
+void ultrasonicTest()
 {
-  
-  //lcd.setCursor(0,0);
-  //lcd.print("LG Cal  ");
-  lcdLine1 =  "LG Cal  ";
-  //lcd.setCursor(0,1);
-  //lcd.print("N/A     ");
-  lcdLine2 =  "N/A     ";
-  
-  if(digitalRead(B3) == HIGH)
+  if(US_beingTested == 1)
   {
-    
+    lcdLine1 =  "US1 Test";
+    lcdLine2 = String(readSonar(US1));
+    Serial.print("US1: "); Serial.println(readSonar(US1));
+  }
+  else if(US_beingTested == 2)
+  {
+    lcdLine1 =  "US2 Test";
+    lcdLine2 = String(readSonar(US2));
+    Serial.print("US2: "); Serial.println(readSonar(US2));
+  }
+  else if(US_beingTested == 3)
+  {
+    lcdLine1 =  "US3 Test";
+    lcdLine2 = String(readSonar(US3));
+    Serial.print("US3: "); Serial.println(readSonar(US3));
+  }
+  else if(US_beingTested == 4)
+  {
+    lcdLine1 =  "US4 Test";
+    lcdLine2 = String(readSonar(US4));
+    Serial.print("US4: "); Serial.println(readSonar(US4));
+  }
+  else if(US_beingTested == 5)
+  {
+    lcdLine1 =  "US5 Test";
+    lcdLine2 = String(readSonar(US5));
+    Serial.print("US5: "); Serial.println(readSonar(US5));
+  }
+  else if(US_beingTested == 6)
+  {
+    lcdLine1 =  "US6 Test";
+    lcdLine2 = String(readSonar(US6));
+    Serial.print("US6: "); Serial.println(readSonar(US6));
+  }
+  if(digitalRead(B3) == HIGH) //Cycle through the US sensors
+  {
+    if(US_beingTested == 6)
+    {
+      US_beingTested = 1;
+    }
+    else
+    {
+      US_beingTested++;
+    }
+    delay(500);
   }
   else if(digitalRead(B1) == HIGH)
   {
@@ -741,7 +859,7 @@ void kickerTest()
   }
   else if(digitalRead(B1) == HIGH)
   {
-    state = LG_CALIBRATION;
+    state = US_TEST;
     delay(500);
   }
   else if(digitalRead(B2) == HIGH)
@@ -764,7 +882,6 @@ void forwardBallPursuit()
   //Turn on absolute mode
   driveAbsoluteMode = true;
   
-  
   if(digitalRead(B3) == HIGH)
   {
     state = START_FORWARD;
@@ -776,9 +893,6 @@ void forwardBallPursuit()
   } 
   float ballAngle = readIR();
   
-
-
-
   //Ball Pursuit - Chooses speed and compensation modifier based on proximity to ball
   int pursuitSpeed = 0;
   float compensationModifier = 0.375; //this was the defauly
@@ -807,7 +921,7 @@ void forwardBallPursuit()
     pursuitSpeed = 0;
   }
   //Ball Pursuit - angle compensation algorithm - puts the robot on a path to capture the ball (get behind it)
-  if(ballAngle != -1)
+  if(ballProximity == 0) //Only run if the ball is seen by the IR sensors
   {
     //Ensuring the bounds of ball angle are between 0 and 360
     if(ballAngle < 0 && ballAngle >= -180)
@@ -836,10 +950,7 @@ void forwardBallPursuit()
   }
   else
   {
-      motor(M1, 0);
-      motor(M2, 0);
-      motor(M3, 0);
-      motor(M4, 0);
+      drivePID(0,0);
       digitalWrite(LED1, HIGH);
   }
   ////////
@@ -872,18 +983,53 @@ void forwardBallPursuit()
         if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
+          //Corner Checks - Front left and front right corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineRight = true;
+          }
         }
         if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
         {
           lineRight = true;
+          //Corner Checks - Front right and back right corners
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
         {
           lineLeft = true;
+          //Corner Checks - Front left and Back left corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineRight = true;
+          }
         }
       state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
       startAvoidOutTime = millis();
@@ -944,18 +1090,53 @@ void forwardHasBall()
         if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
+          //Corner Checks - Front left and front right corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineRight = true;
+          }
         }
         if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
         {
           lineRight = true;
+          //Corner Checks - Front right and back right corners
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
         {
           lineLeft = true;
+          //Corner Checks - Front left and Back left corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineRight = true;
+          }
         }
       state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
       startAvoidOutTime = millis();
@@ -1093,7 +1274,7 @@ void defenseMoveAndBlock()
   } 
   float ballAngle = readIR();
   //Handling block cases
-  if(ballAngle != -1)
+  if(ballProximity != 0) //Only run if the IR sensors see the ball
   {
     if(ballAngle > 80 && ballAngle < 100)
     {
@@ -1122,7 +1303,10 @@ void defenseMoveAndBlock()
   }
   else
   {
-    drivePID(0,0);
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
   }
   //Back up if the sonar is too far away
   int US5_val = readSonar(US5);
@@ -1145,7 +1329,7 @@ void defenseMoveAndBlock()
   }
   if(blackLineSeen == true) //Start the transition
   {
-       brakeMotors();
+       //brakeMotors();
        lineLeft = false;
        lineRight = false;
        lineFront = false;
@@ -1166,8 +1350,8 @@ void defenseMoveAndBlock()
         {
           blackLineBack = true;
         }
-      state = DEFENSE_AVOID_OUTOFBOX; //Transition to avoid out of bounds state
-      startAvoidOutTime = millis();
+      //state = DEFENSE_AVOID_OUTOFBOX; //Transition to avoid out of bounds state
+      //startAvoidOutTime = millis();
   }
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
@@ -1189,20 +1373,55 @@ void defenseMoveAndBlock()
         if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
+          //Corner Checks - Front left and front right corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineRight = true;
+          }
         }
         if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
         {
           lineRight = true;
+          //Corner Checks - Front right and back right corners
+          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
         {
           lineLeft = true;
+          //Corner Checks - Front left and Back left corners
+          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left Corner Check
+          {
+            lineBack = true;
+          }
         }
         if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
+          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          {
+            lineRight = true;
+          }
         }
-      state = DEFENSE_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
       startAvoidOutTime = millis();
   }
 }
