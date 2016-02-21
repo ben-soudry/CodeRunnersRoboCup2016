@@ -1,0 +1,2 @@
+#define INVERT 0
+#define LG_THRESHOLD 978

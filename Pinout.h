@@ -1,5 +1,5 @@
 //Pinout.h
-#define INVERT 1 //Set this to 1 when compiling for the second robot to invert motors
+//#define INVERT 1 //Set this to 1 when compiling for the second robot to invert motors //moved to configs
 //RoboCup 2016 PCB R1 Pinout:
 	//Other constants needed to interface with hardware are included
 //Sensors
@@ -13,10 +13,10 @@
 	#define GS0 0 
 	#define GS1 1
     #define GS2 2
-	#define GS3 3
+	  #define GS3 3
     #define GS4 4
     #define GS5 5
-	#define GS6 6
+	  #define GS6 6
     #define GS7 7
     #define GS8 8
     #define GS9 9
@@ -25,10 +25,10 @@
     #define GS12 12
     #define GS13 13
     #define GS14 14
-	#define GS_THRESHOLD_WHITE 750 //Lower this //750 for first robot
+	#define GS_THRESHOLD_WHITE 750 //Lower this //750 for first robot //575 at the lab
 	#define GS_THRESHOLD_BLACK 380 //365 //Change this
     #define LG 15
-	#define LG_THRESHOLD 986 //972 for first robot
+	//#define LG_THRESHOLD 986 //978 for first robot //986 for second robot //moved to configs
 	//IR Sensor Array
 	#define IR_ANI A0
 	#define IR_S0 22
@@ -55,7 +55,7 @@
 	#define IR18 A3
 	#define IR19 A4
 	#define IR20 A5
-	#define IR_min 10
+	#define IR_min 0
 	#define IR_max 290
 	//Sonar Sensors
 	#define US1 A6 //Front Left

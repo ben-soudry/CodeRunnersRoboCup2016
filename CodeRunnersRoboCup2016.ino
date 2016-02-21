@@ -1,5 +1,7 @@
 #include <HID.h>
 
+
+#include "Robot2Config.h"
 //CodeRunnersRoboCup.ino
 
 #include "Pinout.h" 
@@ -117,7 +119,7 @@ void setup()
   pinMode(B3, INPUT);
 
   delay(100);
-  fieldNorth = readCompass();
+  //fieldNorth = readCompass();
  
   
 
@@ -149,7 +151,7 @@ void loop()
       defenseMoveAndBlock();
       break; 
     case DEFENSE_HAS_BALL:
-
+      defenseHasBall();
       break;
     case DEFENSE_AVOID_OUTOFBOX:
       defenseAvoidOutOfBox();
@@ -207,7 +209,10 @@ void loop()
     LCD_SendBuffer();
     lastLCDUpdateTime = millis();
   }
-  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL || state == DEFENSE_MOVE_AND_BLOCK) && ((currentTime - startTime) > 4000))
+  
+  //Timer
+  /*
+  if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) && ((currentTime - startTime) > 4000))
   {
     Serial.println("Stop");
     digitalWrite(LED1, LOW);
@@ -225,16 +230,37 @@ void loop()
       //stop
     }
   }
+  if(state == DEFENSE_MOVE_AND_BLOCK && ((currentTime - startTime) > 25000))
+  {
+    Serial.println("Stop");
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
+    while(true)
+    {
+      
+       motor(M1, 0);
+       motor(M2, 0);
+       motor(M3, 0);
+       motor(M4, 0);
+       delay(10);
+      //stop
+    }
+  }
+  */
   long endLoopTime = millis();
   long loopDuration = endLoopTime - startLoopTime;
 
   if((state == FORWARD_BALL_PURSUIT || state == FORWARD_HAS_BALL) || state == FORWARD_AVOID_OUTOFBOUNDS)
   {
-    lcdLine2 = String(loopDuration);
+    //lcdLine2 = String(loopDuration);
   }
+  
   //Serial.print("loopDuration: ");
   //Serial.println(loopDuration);
 }
+
 //////////////
 //State Machine Functions - Menu//
 //////////////
@@ -281,6 +307,7 @@ void startDefense()
     delay(500);
     startTime = millis();
     fieldNorth = readCompass();
+
     state = DEFENSE_MOVE_AND_BLOCK; //Change state to the default defense state
   }
   else if(digitalRead(B1) == HIGH)
@@ -291,13 +318,11 @@ void startDefense()
   else if(digitalRead(B2) == HIGH)
   {
     state = IR_TEST;
-    delay(500);
-    
+    delay(500);  
   }
 }
 
 bool IR_TestMode = 0; //0 for ballAngle, 1 for ballProximity
-
 void IR_Test()
 { 
   //lcd.setCursor(0,0);
@@ -464,6 +489,7 @@ void compassCalibration()
 
     delay(500);
     //spin
+    /*
     for(int i=0; i<10; i++)
     {
       motor(M1, 36);
@@ -499,7 +525,7 @@ void compassCalibration()
     motor(M2, 0);
     motor(M3, 0);
     motor(M4, 0);
-    
+    */
     while(digitalRead(B3)== LOW){  
     }
     Serial1.write(endCalibration);
@@ -921,7 +947,7 @@ void forwardBallPursuit()
     pursuitSpeed = 0;
   }
   //Ball Pursuit - angle compensation algorithm - puts the robot on a path to capture the ball (get behind it)
-  if(ballProximity == 0) //Only run if the ball is seen by the IR sensors
+  if(ballProximity != 0) //Only run if the ball is seen by the IR sensors
   {
     //Ensuring the bounds of ball angle are between 0 and 360
     if(ballAngle < 0 && ballAngle >= -180)
@@ -950,8 +976,11 @@ void forwardBallPursuit()
   }
   else
   {
-      drivePID(0,0);
-      digitalWrite(LED1, HIGH);
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
+      digitalWrite(LED3, HIGH);
   }
   ////////
   //State Transitions
@@ -984,11 +1013,11 @@ void forwardBallPursuit()
         {
           lineFront = true;
           //Corner Checks - Front left and front right corners
-          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Front left corner check
           {
             lineLeft = true;
           }
-          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          if(readSonar(US3) < 36 && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
           {
             lineRight = true;
           }
@@ -997,11 +1026,11 @@ void forwardBallPursuit()
         {
           lineRight = true;
           //Corner Checks - Front right and back right corners
-          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          if(readSonar(US3) < 36  && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
           {
             lineFront = true;
           }
-          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36  && readSonar(US5) > 22) //Back right Corner Check
           {
             lineBack = true;
           }
@@ -1010,11 +1039,11 @@ void forwardBallPursuit()
         {
           lineLeft = true;
           //Corner Checks - Front left and Back left corners
-          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Front left corner check
           {
             lineFront = true;
           }
-          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left Corner Check
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Back left Corner Check
           {
             lineBack = true;
           }
@@ -1022,11 +1051,11 @@ void forwardBallPursuit()
         if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
-          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left corner check
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Back left corner check
           {
             lineLeft = true;
           }
-          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36  && readSonar(US5) > 22) //Back right Corner Check
           {
             lineRight = true;
           }
@@ -1049,12 +1078,12 @@ void forwardHasBall()
   long currentTime = millis();
   if((currentTime - startKickTime) < 320) 
   {
-    drivePID(90, 170); //Drive Straight Ahead
+    drivePID(90, 180); //Drive Straight Ahead
   }
   else if((currentTime - startKickTime) < 400)
   {
     digitalWrite(KICKER, HIGH); //Kick
-    drivePID(90, 170);
+    drivePID(90, 190);
   }
   else if((currentTime - startKickTime) < 800)
   {
@@ -1070,6 +1099,8 @@ void forwardHasBall()
   {
     state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
   }
+  ///State Transitions
+
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
   bool lineSeen = false;
@@ -1087,15 +1118,15 @@ void forwardHasBall()
        lineRight = false;
        lineFront = false;
        lineBack = false;
-        if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
+       if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
         {
           lineFront = true;
           //Corner Checks - Front left and front right corners
-          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Front left corner check
           {
             lineLeft = true;
           }
-          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          if(readSonar(US3) < 36 && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
           {
             lineRight = true;
           }
@@ -1104,11 +1135,11 @@ void forwardHasBall()
         {
           lineRight = true;
           //Corner Checks - Front right and back right corners
-          if(readSonar(US3) < 36 && readSonar(US4) < 36) //Front right corner check
+          if(readSonar(US3) < 36  && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
           {
             lineFront = true;
           }
-          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36  && readSonar(US5) > 22) //Back right Corner Check
           {
             lineBack = true;
           }
@@ -1117,11 +1148,11 @@ void forwardHasBall()
         {
           lineLeft = true;
           //Corner Checks - Front left and Back left corners
-          if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Front left corner check
           {
             lineFront = true;
           }
-          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left Corner Check
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Back left Corner Check
           {
             lineBack = true;
           }
@@ -1129,11 +1160,11 @@ void forwardHasBall()
         if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
         {
           lineBack = true;
-          if(readSonar(US5) < 36 && readSonar(US6) < 36) //Back left corner check
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36  && readSonar(US6) > 22) //Back left corner check
           {
             lineLeft = true;
           }
-          if(readSonar(US4) < 36 && readSonar(US5) < 36) //Back right Corner Check
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36  && readSonar(US5) > 22) //Back right Corner Check
           {
             lineRight = true;
           }
@@ -1303,6 +1334,7 @@ void defenseMoveAndBlock()
   }
   else
   {
+      digitalWrite(LED3, HIGH);
       motor(M1, 0);
       motor(M2, 0);
       motor(M3, 0);
@@ -1316,7 +1348,14 @@ void defenseMoveAndBlock()
     drivePID(270,90);
   }
   */
-  //State Transition
+  //State Transitions
+  //See if the ball was captured using light gate and IR sensors
+  bool LG_Status = readLightGate();
+  if(LG_Status == true && ballAngle > 80 && ballAngle < 100 && ballProximity == 4)
+  {
+    state = DEFENSE_HAS_BALL; //Transition to defense has ball state
+    startKickTime = millis();
+  }
   //See if the robot is out of the box using ground sensor
   readGroundSensor();
   bool blackLineSeen = false;
@@ -1374,6 +1413,111 @@ void defenseMoveAndBlock()
         {
           lineFront = true;
           //Corner Checks - Front left and front right corners
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Front left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US3) < 36 && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
+          {
+            lineRight = true;
+          }
+        }
+        if(groundSensor[GS3] > GS_THRESHOLD_WHITE || groundSensor[GS4] > GS_THRESHOLD_WHITE || groundSensor[GS5] > GS_THRESHOLD_WHITE || groundSensor[GS6] > GS_THRESHOLD_WHITE)
+        {
+          lineRight = true;
+          //Corner Checks - Front right and back right corners
+          if(readSonar(US3) < 36 && readSonar(US3) > 22 && readSonar(US4) < 36 && readSonar(US4) > 22) //Front right corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36 && readSonar(US5) > 22) //Back right Corner Check
+          {
+            lineBack = true;
+          }
+        }
+        if(groundSensor[GS7] > GS_THRESHOLD_WHITE || groundSensor[GS8] > GS_THRESHOLD_WHITE || groundSensor[GS9] > GS_THRESHOLD_WHITE || groundSensor[GS10] > GS_THRESHOLD_WHITE)
+        {
+          lineLeft = true;
+          //Corner Checks - Front left and Back left corners
+          if(readSonar(US1) < 36 && readSonar(US1) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Front left corner check
+          {
+            lineFront = true;
+          }
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Back left Corner Check
+          {
+            lineBack = true;
+          }
+        }
+        if(groundSensor[GS11] > GS_THRESHOLD_WHITE || groundSensor[GS12] > GS_THRESHOLD_WHITE || groundSensor[GS13] > GS_THRESHOLD_WHITE || groundSensor[GS14] > GS_THRESHOLD_WHITE)
+        {
+          lineBack = true;
+          if(readSonar(US5) < 36 && readSonar(US5) > 22 && readSonar(US6) < 36 && readSonar(US6) > 22) //Back left corner check
+          {
+            lineLeft = true;
+          }
+          if(readSonar(US4) < 36 && readSonar(US4) > 22 && readSonar(US5) < 36 && readSonar(US5) > 22) //Back right Corner Check
+          {
+            lineRight = true;
+          }
+        }
+      state = DEFENSE_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      startAvoidOutTime = millis();
+  }
+}
+void defenseHasBall()
+{
+  lcdLine1 = "HasBall";
+  //lcdLine2 = "Defense";
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, HIGH);
+  digitalWrite(LED4, LOW);
+  //Turn on absolute mode
+  driveAbsoluteMode = true;
+
+  //Timeline
+  long currentTime = millis();
+  if((currentTime - startKickTime) < 120) 
+  {
+    drivePID(90, 180); //Drive Straight Ahead
+  }
+  else if((currentTime - startKickTime) < 200)
+  {
+    digitalWrite(KICKER, HIGH); //Kick
+    drivePID(90, 190);
+  }
+  else if((currentTime - startKickTime) < 400)
+  {
+    ///Back up and Kicker Off
+    digitalWrite(KICKER, LOW);
+    drivePID(270, 180);
+  }
+  else
+  {
+    state = DEFENSE_MOVE_AND_BLOCK; //Transistion back to move and block
+  }
+   ///State Transitions
+
+  //See if the robot is out of bounds using ground sensor
+  readGroundSensor();
+  bool lineSeen = false;
+  for(int i=0; i<15; i++)
+  {
+    if(groundSensor[i] > GS_THRESHOLD_WHITE)
+    {
+      lineSeen = true;
+    }
+  }
+  if(lineSeen == true) //Start the transition
+  {
+       brakeMotors();
+       lineLeft = false;
+       lineRight = false;
+       lineFront = false;
+       lineBack = false;
+        if(groundSensor[GS0] > GS_THRESHOLD_WHITE || groundSensor[GS1] > GS_THRESHOLD_WHITE || groundSensor[GS2] > GS_THRESHOLD_WHITE)
+        {
+          lineFront = true;
+          //Corner Checks - Front left and front right corners
           if(readSonar(US1) < 36 && readSonar(US6) < 36) //Front left corner check
           {
             lineLeft = true;
@@ -1421,13 +1565,9 @@ void defenseMoveAndBlock()
             lineRight = true;
           }
         }
-      state = FORWARD_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
+      state = DEFENSE_AVOID_OUTOFBOUNDS; //Transition to avoid out of bounds state
       startAvoidOutTime = millis();
   }
-}
-void defenseHasBall()
-{
-
 }
 void defenseAvoidOutOfBox()
 {
@@ -1573,9 +1713,7 @@ void defenseAvoidOutOfBounds()
         lineBack = true;
     }
   }
-  ////////
-  //State Transitions
-  ////////
+
   if(currentTime - startAvoidOutTime < 500)
   {
     //Handling Out of bounds cases
@@ -1706,7 +1844,7 @@ void drivePID(int dir, int PWR)
     }
     drive(correctedDir,-totalRotGain, PWR);
   }
-  else //the robot is stopped
+  else if(currentVal != -1) //the robot is stopped
   {
     if((totalRotGain > 24 || totalRotGain < -24) && currentVal != -1) //20
     {  
@@ -1730,6 +1868,13 @@ void drivePID(int dir, int PWR)
        motor(M4, 0);
        //brakeMotors();
     }
+  }
+  else //This might fix the spin.
+  {
+    motor(M1, 0);
+    motor(M2, 0);
+    motor(M3, 0);
+    motor(M4, 0);
   }
   //store the last pErr
   lastErr = pErr; 
@@ -2197,7 +2342,6 @@ int readGSMux(int channel) //selects the given channel on the ground sensor mult
 //////////////
 //LCD Functions//
 //////////////
-
 void LCD_SendBuffer()
 {
   lcd.clear();
