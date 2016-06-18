@@ -10,7 +10,7 @@ int state = START_FORWARD;
 
 
 float fieldNorth;
-
+boolean compassWorking = true;
 
 long startTime;
 
@@ -38,6 +38,10 @@ long startAvoidOutTime;
  bool blackLineRight = false;
  bool blackLineFront = false;
  bool blackLineBack = false;
+
+ //Sonar Localization Regions
+ bool leftOfGoal = false;
+ bool rightOfGoal = false;
 
 int groundSensor[15];
 
@@ -119,9 +123,7 @@ void setup()
   pinMode(B3, INPUT);
 
   delay(100);
-  //fieldNorth = readCompass();
- 
-  
+  fieldNorth = readCompass();
 
   lastLCDUpdateTime = millis();
 }
@@ -273,6 +275,14 @@ void startForward()
   lcdLine1 =  "Start   ";
   lcdLine2 =  "Forward ";
 
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
@@ -301,6 +311,14 @@ void startDefense()
   lcdLine1 =  "Start   ";
   lcdLine2 =  "Defense ";
 
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
@@ -328,6 +346,15 @@ void IR_Test()
   //lcd.setCursor(0,0);
   //lcd.print("IR Test ");
   lcdLine1 =  "IR Test ";
+
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   float ballAngle = readIR();
   if(IR_TestMode == 0)
   {
@@ -398,13 +425,27 @@ void compassTest()
   //lcd.print("Compass ");
   lcdLine1 =  "Compass ";
 
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   float compassHeading = readCompass();
   //lcd.setCursor(0,1);
   //lcd.print(compassHeading);
-  lcdLine2 =  String(compassHeading);
-
-  //Serial.print("Compass Heading: ");
-  //Serial.println(compassHeading);
+  if(compassWorking == true)
+  {
+    lcdLine2 =  String(compassHeading);
+  }
+  else
+  {
+    lcdLine2 = "NotFound";
+  }
+  Serial.print("Compass Heading: ");
+  Serial.println(compassHeading);
 
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
@@ -426,6 +467,15 @@ void compassCalibration()
   lcdLine1 = "CMPS_Cal";
 
   lcdLine2 =  "Start   ";
+
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   Serial.println("Press to Start then rotate Robot 360 Degrees to Calibrate");
   if(digitalRead(B3) == HIGH) //Run Calibration Sequence
   {
@@ -559,6 +609,9 @@ bool GS_TestMode = 0; //0 for testing white lines
 void groundSensorTest()
 {
   lcdLine1 = "GS Test ";
+
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
 
   readGroundSensor();
   if(GS_TestMode == 0)
@@ -738,6 +791,15 @@ void groundSensorCalibration()
   //lcd.setCursor(0,1);
   //lcd.print("N/A     ");
   lcdLine2 =  "N/A     ";
+
+  //Keep LEDs off
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
@@ -755,11 +817,11 @@ void groundSensorCalibration()
 }
 void lightGateTest()
 {
-  //lcd.setCursor(0,0);
-  //lcd.print("LG Test ");
   lcdLine1 =  "LG Test ";
-  //lcd.setCursor(0,1);
-  //lcd.print("N/A     ");
+
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
   bool LG_Status = readLightGate();
   float IR_Status = readIR();
   //float ballAngle = 90.0;
@@ -784,8 +846,6 @@ void lightGateTest()
     digitalWrite(LED1, LOW);
     lcdLine2 =  "Empty";
   }
-
-  
   //Reading Buttons
   if(digitalRead(B3) == HIGH)
   {
@@ -804,6 +864,62 @@ void lightGateTest()
 int US_beingTested = 1; //This keeps track of which ultrasonic sensor is currently being tested
 void ultrasonicTest()
 {
+  //Make sure the kicker is off
+  digitalWrite(KICKER, LOW);
+
+  if(readSonar(US4) > 111) //was 121
+  {
+    digitalWrite(LED2, HIGH);
+  }
+  else
+  {
+    digitalWrite(LED2, LOW);
+  }
+  if(readSonar(US6) > 111) //was 121
+  {
+    digitalWrite(LED4, HIGH);
+  }
+  else
+  {
+    digitalWrite(LED4, LOW);
+  }
+  //Goal Detection code
+  int sonar1 = readSonar(US1);
+  int sonar2 = readSonar(US2);
+  int sonar3 = readSonar(US3);
+  if(sonar1 > sonar2 && sonar1 > sonar3) //sonar1 is the highest value
+  {
+    if(sonar1 < 60) 
+    {
+      digitalWrite(LED1, HIGH);
+    }
+    else
+    {
+      digitalWrite(LED1, LOW);
+    }
+  }
+  else if(sonar2 > sonar1 && sonar2 > sonar3) //sonar2 is the highest value
+  {
+    if(sonar2 < 60) 
+    {
+      digitalWrite(LED1, HIGH);
+    }
+    else
+    {
+      digitalWrite(LED1, LOW);
+    }
+  }
+  else if(sonar3 > sonar1 && sonar3 > sonar2) //sonar3 is the highest value
+  {
+    if(sonar3 < 60) 
+    {
+      digitalWrite(LED1, HIGH);
+    }
+    else
+    {
+      digitalWrite(LED1, LOW);
+    }
+  }
   if(US_beingTested == 1)
   {
     lcdLine1 =  "US1 Test";
@@ -855,11 +971,21 @@ void ultrasonicTest()
   else if(digitalRead(B1) == HIGH)
   {
     state = LG_TEST;
+    //Keep LEDs off
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
     delay(500);
   }
   else if(digitalRead(B2) == HIGH)
   {
     state = KICKER_TEST;
+    //Keep LEDs off
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
     delay(500);
   }
 }
@@ -870,8 +996,6 @@ void kickerTest()
   lcdLine1 = "Kicker  ";
   //lcd.setCursor(0,1);
   //lcd.print("Ready   ");
-  lcdLine2 = "Ready   ";
-  
   if(digitalRead(B3) == HIGH)
   {
     lcd.setCursor(0,1);
@@ -886,11 +1010,25 @@ void kickerTest()
   else if(digitalRead(B1) == HIGH)
   {
     state = US_TEST;
+    //Make sure the kicker is off
+    digitalWrite(KICKER, LOW);
+    //Keep LEDs off
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
     delay(500);
   }
   else if(digitalRead(B2) == HIGH)
   {
     state = START_FORWARD;
+    //Make sure the kicker is off
+    digitalWrite(KICKER, LOW);
+    //Keep LEDs off
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
     delay(500);
   }  
 }
@@ -904,6 +1042,9 @@ void forwardBallPursuit()
   digitalWrite(LED1, HIGH);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, LOW);
+
+  //Make Sure Kicker is off
+  digitalWrite(KICKER, LOW);
 
   //Turn on absolute mode
   driveAbsoluteMode = true;
@@ -921,20 +1062,20 @@ void forwardBallPursuit()
   
   //Ball Pursuit - Chooses speed and compensation modifier based on proximity to ball
   int pursuitSpeed = 0;
-  float compensationModifier = 0.375; //this was the defauly
+  float compensationModifier = 0.375; //this was the default
   if(ballProximity == 4)
   {
-    pursuitSpeed = 110;
+    pursuitSpeed = 140; //160
     compensationModifier = 0.5;
   }
   else if(ballProximity == 3)
   {
-    pursuitSpeed = 135;
+    pursuitSpeed = 155; //165
     compensationModifier = 0.4; //large differences in modifier creates less smooth motion
   }
   else if(ballProximity == 2)
   {
-    pursuitSpeed = 160;
+    pursuitSpeed = 165; 
     compensationModifier = 0.35;
   }
   else if(ballProximity == 1)
@@ -980,7 +1121,8 @@ void forwardBallPursuit()
       motor(M2, 0);
       motor(M3, 0);
       motor(M4, 0);
-      digitalWrite(LED3, HIGH);
+      lcdLine1 = "No Ball";
+      //digitalWrite(LED3, HIGH);
   }
   ////////
   //State Transitions
@@ -990,6 +1132,8 @@ void forwardBallPursuit()
   if(LG_Status == true && ballAngle > 80 && ballAngle < 100 && ballProximity == 4)
   {
     state = FORWARD_HAS_BALL; //Transition to HasBall State
+    leftOfGoal = false;
+    rightOfGoal = false;
     startKickTime = millis();
   }
   //See if the robot is out of bounds using ground sensor
@@ -1074,18 +1218,62 @@ void forwardHasBall()
   //Turn on absolute mode
   driveAbsoluteMode = true;
 
+  if(readSonar(US4) > 111) //was 121
+  {
+    leftOfGoal = true;
+    //digitalWrite(LED2, HIGH);
+  }
+
+  if(readSonar(US6) > 111) //was 121
+  {
+    rightOfGoal = true;
+    //digitalWrite(LED4, HIGH);
+  }
+
   //Timeline
   long currentTime = millis();
   if((currentTime - startKickTime) < 320) 
   {
-    drivePID(90, 180); //Drive Straight Ahead
+    ///Smart Aiming for Goal
+    if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
+    {
+      drivePID(90, 180); //Drive Straight Ahead
+    }
+    else if(leftOfGoal)
+    {
+      drivePID(60, 190); //Drive Right and Forward
+    }
+    else if(rightOfGoal)
+    {
+      drivePID(120, 190); //Drive Left and Forward
+    }
+    else //we are in front of goal, just go straight
+    {
+      drivePID(90, 180); //Drive Straight Ahead
+    }
   }
   else if((currentTime - startKickTime) < 400)
   {
     digitalWrite(KICKER, HIGH); //Kick
-    drivePID(90, 190);
+    ///Smart Aiming for Goal
+    if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
+    {
+      drivePID(90, 180); //Drive Straight Ahead
+    }
+    else if(leftOfGoal)
+    {
+      drivePID(45, 180); //Drive Right and Forward
+    }
+    else if(rightOfGoal)
+    {
+      drivePID(135, 180); //Drive Left and Forward
+    }
+    else //we are in front of goal, just go straight
+    {
+      drivePID(90, 180); //Drive Straight Ahead
+    }
   }
-  else if((currentTime - startKickTime) < 800)
+  else if((currentTime - startKickTime) < 600)
   {
     //Stop and Kicker Off
     //motor(M1, 0);
@@ -1097,6 +1285,8 @@ void forwardHasBall()
   }
   else
   {
+    //digitalWrite(LED2, LOW);
+    //digitalWrite(LED4, LOW);
     state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
   }
   ///State Transitions
@@ -1114,6 +1304,7 @@ void forwardHasBall()
   if(lineSeen == true) //Start the transition
   {
        brakeMotors();
+       digitalWrite(KICKER, LOW); //Turn off Kicker - This fixes the spinning problem
        lineLeft = false;
        lineRight = false;
        lineFront = false;
@@ -1180,12 +1371,16 @@ void forwardAvoidOutOfBounds()
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, HIGH);
+
+  //Make Sure Kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Turn off absolute mode
   driveAbsoluteMode = false;
 
   //Only react to new sensor data once the robot has reacted to the initial data and is not sliding out of bounds (after 200ms)
   long currentTime = millis();
-  if(currentTime - startAvoidOutTime > 200) 
+  if(currentTime - startAvoidOutTime > 100) //was 200ms
   {
     lineLeft = false;
     lineRight = false;
@@ -1212,7 +1407,7 @@ void forwardAvoidOutOfBounds()
   ////////
   //State Transitions
   ////////
-  if(currentTime - startAvoidOutTime < 400)
+  if(currentTime - startAvoidOutTime < 650)
   {
     //Handling Out of bounds cases
     if(lineFront == true && lineBack == true && lineLeft == true && lineRight == true) //All sides detected - this should never happen
@@ -1272,10 +1467,6 @@ void forwardAvoidOutOfBounds()
       drivePID(0,0);
     }
   }
-  else if(currentTime - startAvoidOutTime < 650)
-  {
-    drivePID(0,0);
-  } 
   else
   {
     state = FORWARD_BALL_PURSUIT;
@@ -1291,6 +1482,10 @@ void defenseMoveAndBlock()
   digitalWrite(LED1, HIGH);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, LOW);
+
+  //Make Sure Kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Turn on absolute mode
   driveAbsoluteMode = true;
 
@@ -1334,7 +1529,7 @@ void defenseMoveAndBlock()
   }
   else
   {
-      digitalWrite(LED3, HIGH);
+      //digitalWrite(LED3, HIGH);
       motor(M1, 0);
       motor(M2, 0);
       motor(M3, 0);
@@ -1348,7 +1543,9 @@ void defenseMoveAndBlock()
     drivePID(270,90);
   }
   */
+  ////
   //State Transitions
+  ////
   //See if the ball was captured using light gate and IR sensors
   bool LG_Status = readLightGate();
   if(LG_Status == true && ballAngle > 80 && ballAngle < 100 && ballProximity == 4)
@@ -1510,6 +1707,7 @@ void defenseHasBall()
   if(lineSeen == true) //Start the transition
   {
        brakeMotors();
+       digitalWrite(KICKER, LOW); //Turn off Kicker - This fixes the spinning problem
        lineLeft = false;
        lineRight = false;
        lineFront = false;
@@ -1576,6 +1774,9 @@ void defenseAvoidOutOfBox()
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, HIGH);
+  //Make Sure Kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Turn off absolute mode
   driveAbsoluteMode = false;
 
@@ -1684,6 +1885,9 @@ void defenseAvoidOutOfBounds()
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED4, HIGH);
+  //Make Sure Kicker is off
+  digitalWrite(KICKER, LOW);
+
   //Turn off absolute mode
   driveAbsoluteMode = false;
 
@@ -1783,6 +1987,8 @@ void defenseAvoidOutOfBounds()
     state = DEFENSE_MOVE_AND_BLOCK;
   }
 }
+
+
 /////////////
 //Functions for Controlling Robot Drive//
 //////////////
@@ -1796,7 +2002,7 @@ void drivePID(int dir, int PWR)
 
   //float currentVal = readCompass();
   float currentVal = readCompass();
-  //lcdLine2 = String(currentVal);
+  lcdLine2 = String(currentVal);
   //P - Proportional
   float pErr = angleDif(currentVal,targetVal); //difference of the angles
   /*
@@ -1819,7 +2025,7 @@ void drivePID(int dir, int PWR)
   //total
   float totalRotGain = pGain + dGain;
 
-  if(PWR != 0 && currentVal != -1) //the robot is driving
+  if(PWR != 0 && compassWorking == true && currentVal != -1) //the robot is driving
   {
     totalRotGain = constrain(totalRotGain,-60, 60);
     if(totalRotGain > 10 || totalRotGain < -10) //20
@@ -1844,7 +2050,7 @@ void drivePID(int dir, int PWR)
     }
     drive(correctedDir,-totalRotGain, PWR);
   }
-  else if(currentVal != -1) //the robot is stopped
+  else if(compassWorking == true &&  currentVal != -1) //the robot is standing in place (still do rotational corrections)
   {
     if((totalRotGain > 24 || totalRotGain < -24) && currentVal != -1) //20
     {  
@@ -1869,7 +2075,7 @@ void drivePID(int dir, int PWR)
        //brakeMotors();
     }
   }
-  else //This might fix the spin.
+  else //compass not working, stop robot
   {
     motor(M1, 0);
     motor(M2, 0);
@@ -2077,27 +2283,36 @@ void brakeMotors() //Stop all drive motors
 //Functions for Reading Sensors//
 //////////////
 ////Reading Compass Sensor
-float readCompass()
+float readCompass() //8 bit mode to avoid errors
 {
+  reset:
   Serial1.write(compassCommand);
-  delay(10); //Change This
-  if(Serial1.available())
-  {  
-    byte byte1 = Serial1.read();
-    byte byte2 = Serial1.read();
-    
-    word compassVal = word(byte1,byte2);
-    //Serial.println(compassVal);
-    float processedVal =  (float) compassVal/10 ;
-    
-    //Serial.print("CMPS: "); Serial.println(processedVal);
-    return processedVal;
-  }
-  else
+  long waitStartTime = millis();
+  while(Serial1.available() < 1)
   {
-    Serial.println("compass not available");
-    return -1;
+    long currentTime = millis();
+    if((currentTime - waitStartTime) > 400)
+    {
+      Serial.println("No Compass Plugged In");
+      compassWorking = false;
+      return -1;
+    }
   }
+  if(compassWorking == false) //The compass wasn't working previously but it came back on
+  {
+    //Reset Serial communication
+    Serial.println("Compass Reset");
+    Serial1.end();
+    Serial1.begin(9600);
+    compassWorking = true;
+    //Serial.print("Number of Bytes Available: ");
+    //Serial.println(Serial1.available());
+    goto reset; //restart function
+  }
+  byte compass_raw = Serial1.read();
+  int mappedVal = map(compass_raw, 0,255, 0,3600); //maps the 8bit angle to 0-3600
+  float processedVal = ((float)mappedVal)/(float)10;
+  return processedVal;
 }
 ////Reading Light Gate Sensor
 bool readLightGate()
@@ -2358,9 +2573,9 @@ void LCD_SendBuffer()
 //////////////
 float angleDif(float x, float y) //used to calculate the difference between actual heading and the target heading in drivePID()
 {
-  float radianDif = ((x-y)*71)/4068;
+  float radianDif = ((x-y)*(float)71)/((float)4068); // to radians
   float a = (float) atan2(sin(radianDif), cos(radianDif));
-  a =  (a * 4068) / 71; //to degrees 
+  a =  (a * (float)4068) / (float)71; //to degrees 
 
   return a;
 }

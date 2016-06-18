@@ -25,7 +25,7 @@
     #define GS12 12
     #define GS13 13
     #define GS14 14
-	#define GS_THRESHOLD_WHITE 750 //Lower this //750 for first robot //575 at the lab
+	#define GS_THRESHOLD_WHITE 590 //Lower this //750 for first robot //575 at the lab //625 at competition robot2 //590 robot 1
 	#define GS_THRESHOLD_BLACK 380 //365 //Change this
     #define LG 15
 	//#define LG_THRESHOLD 986 //978 for first robot //986 for second robot //moved to configs
@@ -65,7 +65,7 @@
 	#define US5 A10 //Back
 	#define US6 A11 //Right
 	//Compass Sensor - Serial1
-	#define compassCommand 0x13
+	#define compassCommand 0x12 //8 bit mode - use 0x13 for 16 bit
 	#define startCalibration1 0xF0 //F0
 	#define startCalibration2 0xF5 //F5
 	#define startCalibration3 0xF7 //F7 for simple calibration //F6 for tilt-compensation
