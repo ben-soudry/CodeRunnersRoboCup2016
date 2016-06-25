@@ -1,7 +1,7 @@
 #include <HID.h>
 
 
-#include "Robot2Config.h"
+#include "Robot1Config.h"
 //CodeRunnersRoboCup.ino
 
 #include "Pinout.h" 
@@ -42,6 +42,10 @@ long startAvoidOutTime;
  //Sonar Localization Regions
  bool leftOfGoal = false;
  bool rightOfGoal = false;
+ bool goalDetected = false;
+
+ bool kickPhase = false;
+ long startKickPhase;
 
 int groundSensor[15];
 
@@ -994,8 +998,8 @@ void kickerTest()
   //lcd.setCursor(0,0);
   //lcd.print("Kicker  ");
   lcdLine1 = "Kicker  ";
-  //lcd.setCursor(0,1);
-  //lcd.print("Ready   ");
+  lcd.setCursor(0,1);
+  lcd.print("Ready   ");
   if(digitalRead(B3) == HIGH)
   {
     lcd.setCursor(0,1);
@@ -1134,6 +1138,8 @@ void forwardBallPursuit()
     state = FORWARD_HAS_BALL; //Transition to HasBall State
     leftOfGoal = false;
     rightOfGoal = false;
+    goalDetected = false;
+    kickPhase = false;
     startKickTime = millis();
   }
   //See if the robot is out of bounds using ground sensor
@@ -1208,6 +1214,7 @@ void forwardBallPursuit()
       startAvoidOutTime = millis();
   }
 }
+
 void forwardHasBall()
 {
   lcdLine1 = "HasBall";
@@ -1218,6 +1225,7 @@ void forwardHasBall()
   //Turn on absolute mode
   driveAbsoluteMode = true;
 
+  //Left/Right of Goal Checking
   if(readSonar(US4) > 111) //was 121
   {
     leftOfGoal = true;
@@ -1229,11 +1237,45 @@ void forwardHasBall()
     rightOfGoal = true;
     //digitalWrite(LED4, HIGH);
   }
+  
+//Goal Detection code - checks for proximity to goal
+  int sonar1 = readSonar(US1);
+  int sonar2 = readSonar(US2);
+  int sonar3 = readSonar(US3);
+  if(sonar1 > sonar2 && sonar1 > sonar3) //sonar1 is the highest value
+  {
+    if(sonar1 < 60) {
+      goalDetected = true;
+      //digitalWrite(LED1, HIGH);
+    }
+  }
+  else if(sonar2 > sonar1 && sonar2 > sonar3) //sonar2 is the highest value
+  {
+    if(sonar2 < 60) {
+      goalDetected = true;
+      //digitalWrite(LED1, HIGH);
+    }
+  }
+  else if(sonar3 > sonar1 && sonar3 > sonar2) //sonar3 is the highest value
+  {
+    if(sonar3 < 60) {
+      goalDetected = true;
+      //digitalWrite(LED1, HIGH);
+    }
+  }
 
   //Timeline
   long currentTime = millis();
-  if((currentTime - startKickTime) < 320) 
+  
+  //Conditions for KickPhase
+  if((goalDetected == true && kickPhase == false && (currentTime - startKickTime) > 200 && (currentTime - startKickTime) < 620) || ((currentTime - startKickTime) > 620 && kickPhase == false))
   {
+    kickPhase = true;
+    startKickPhase = millis();
+  }
+  if(kickPhase == false)
+  {
+    digitalWrite(KICKER, LOW);
     ///Smart Aiming for Goal
     if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
     {
@@ -1252,44 +1294,47 @@ void forwardHasBall()
       drivePID(90, 180); //Drive Straight Ahead
     }
   }
-  else if((currentTime - startKickTime) < 400)
+  else //Kick Phase was initiated
   {
-    digitalWrite(KICKER, HIGH); //Kick
-    ///Smart Aiming for Goal
-    if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
-    {
-      drivePID(90, 180); //Drive Straight Ahead
+    if((currentTime - startKickPhase) < 80){
+       digitalWrite(KICKER, HIGH); //Kick
+        ///Smart Aiming for Goal
+        if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
+        {
+          drivePID(90, 180); //Drive Straight Ahead
+        }
+        else if(leftOfGoal)
+        {
+          drivePID(45, 180); //Drive Right and Forward
+        }
+        else if(rightOfGoal)
+        {
+          drivePID(135, 180); //Drive Left and Forward
+        }
+        else //we are in front of goal, just go straight
+        {
+          drivePID(90, 180); //Drive Straight Ahead
+        }
     }
-    else if(leftOfGoal)
+    else if((currentTime - startKickPhase) < 580)
     {
-      drivePID(45, 180); //Drive Right and Forward
+      digitalWrite(KICKER, LOW);
+      //drivePID(0,0);
+      motor(M1, 0);
+      motor(M2, 0);
+      motor(M3, 0);
+      motor(M4, 0);
     }
-    else if(rightOfGoal)
+    else
     {
-      drivePID(135, 180); //Drive Left and Forward
-    }
-    else //we are in front of goal, just go straight
-    {
-      drivePID(90, 180); //Drive Straight Ahead
+      digitalWrite(KICKER, LOW);
+      state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
     }
   }
-  else if((currentTime - startKickTime) < 600)
-  {
-    //Stop and Kicker Off
-    //motor(M1, 0);
-    //motor(M2, 0);
-    //motor(M3, 0);
-    //motor(M4, 0);
-    drivePID(0,0);
-    digitalWrite(KICKER, LOW);
-  }
-  else
-  {
-    //digitalWrite(LED2, LOW);
-    //digitalWrite(LED4, LOW);
-    state = FORWARD_BALL_PURSUIT; //Transistion back to ball pursuit
-  }
+  
+  /////////////////////
   ///State Transitions
+  ////////////////////
 
   //See if the robot is out of bounds using ground sensor
   readGroundSensor();
