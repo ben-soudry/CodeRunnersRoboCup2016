@@ -10,6 +10,7 @@ int state = START_FORWARD;
 
 
 float fieldNorth;
+float rotOffset = 0; //Change this to point the robot at a different angle relative to fieldNorth
 boolean compassWorking = true;
 
 long startTime;
@@ -1049,6 +1050,7 @@ void forwardBallPursuit()
 
   //Make Sure Kicker is off
   digitalWrite(KICKER, LOW);
+  rotOffset = 0;
 
   //Turn on absolute mode
   driveAbsoluteMode = true;
@@ -1280,46 +1282,55 @@ void forwardHasBall()
     if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
     {
       drivePID(90, 180); //Drive Straight Ahead
+      rotOffset = 0;
     }
     else if(leftOfGoal)
     {
-      drivePID(60, 190); //Drive Right and Forward
+      drivePID(90, 190); //Drive Right and Forward
+      rotOffset = -20;
     }
     else if(rightOfGoal)
     {
-      drivePID(120, 190); //Drive Left and Forward
+      drivePID(90, 190); //Drive Left and Forward
+      rotOffset = 20;
     }
     else //we are in front of goal, just go straight
     {
       drivePID(90, 180); //Drive Straight Ahead
+      rotOffset = 0;
     }
   }
   else //Kick Phase was initiated
   {
     if((currentTime - startKickPhase) < 80){
        digitalWrite(KICKER, HIGH); //Kick
-        ///Smart Aiming for Goal
-        if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
-        {
-          drivePID(90, 180); //Drive Straight Ahead
-        }
-        else if(leftOfGoal)
-        {
-          drivePID(45, 180); //Drive Right and Forward
-        }
-        else if(rightOfGoal)
-        {
-          drivePID(135, 180); //Drive Left and Forward
-        }
-        else //we are in front of goal, just go straight
-        {
-          drivePID(90, 180); //Drive Straight Ahead
-        }
+      ///Smart Aiming for Goal
+      if(leftOfGoal && rightOfGoal) //Both sonars see above 121, this shouldn't happen - except in superteams
+      {
+        drivePID(90, 180); //Drive Straight Ahead
+        rotOffset = 0;
+      }
+      else if(leftOfGoal)
+      {
+        drivePID(90, 190); //Drive Right and Forward
+        rotOffset = -20;
+      }
+      else if(rightOfGoal)
+      {
+        drivePID(90, 190); //Drive Left and Forward
+        rotOffset = 20;
+      }
+      else //we are in front of goal, just go straight
+      {
+        drivePID(90, 180); //Drive Straight Ahead
+        rotOffset = 0;
+      }
     }
     else if((currentTime - startKickPhase) < 580)
     {
       digitalWrite(KICKER, LOW);
       //drivePID(0,0);
+      rotOffset = 0;
       motor(M1, 0);
       motor(M2, 0);
       motor(M3, 0);
@@ -1350,6 +1361,8 @@ void forwardHasBall()
   {
        brakeMotors();
        digitalWrite(KICKER, LOW); //Turn off Kicker - This fixes the spinning problem
+       rotOffset = 0;
+
        lineLeft = false;
        lineRight = false;
        lineFront = false;
@@ -1419,6 +1432,7 @@ void forwardAvoidOutOfBounds()
 
   //Make Sure Kicker is off
   digitalWrite(KICKER, LOW);
+  rotOffset = 0;
 
   //Turn off absolute mode
   driveAbsoluteMode = false;
@@ -1530,6 +1544,7 @@ void defenseMoveAndBlock()
 
   //Make Sure Kicker is off
   digitalWrite(KICKER, LOW);
+  rotOffset = 0;
 
   //Turn on absolute mode
   driveAbsoluteMode = true;
@@ -1718,16 +1733,18 @@ void defenseHasBall()
 
   //Timeline
   long currentTime = millis();
-  if((currentTime - startKickTime) < 120) 
+  if((currentTime - startKickTime) < 220) 
   {
+    rotOffset = 50;
     drivePID(90, 180); //Drive Straight Ahead
   }
-  else if((currentTime - startKickTime) < 200)
+  else if((currentTime - startKickTime) < 300)
   {
+    rotOffset = 50;
     digitalWrite(KICKER, HIGH); //Kick
     drivePID(90, 190);
   }
-  else if((currentTime - startKickTime) < 400)
+  else if((currentTime - startKickTime) < 600)
   {
     ///Back up and Kicker Off
     digitalWrite(KICKER, LOW);
@@ -1735,6 +1752,7 @@ void defenseHasBall()
   }
   else
   {
+    rotOffset = 0;
     state = DEFENSE_MOVE_AND_BLOCK; //Transistion back to move and block
   }
    ///State Transitions
@@ -1753,6 +1771,8 @@ void defenseHasBall()
   {
        brakeMotors();
        digitalWrite(KICKER, LOW); //Turn off Kicker - This fixes the spinning problem
+       rotOffset = 0;
+
        lineLeft = false;
        lineRight = false;
        lineFront = false;
@@ -1821,6 +1841,7 @@ void defenseAvoidOutOfBox()
   digitalWrite(LED4, HIGH);
   //Make Sure Kicker is off
   digitalWrite(KICKER, LOW);
+  rotOffset = 0;
 
   //Turn off absolute mode
   driveAbsoluteMode = false;
@@ -1932,7 +1953,8 @@ void defenseAvoidOutOfBounds()
   digitalWrite(LED4, HIGH);
   //Make Sure Kicker is off
   digitalWrite(KICKER, LOW);
-
+  rotOffset = 0;
+  
   //Turn off absolute mode
   driveAbsoluteMode = false;
 
@@ -2043,7 +2065,7 @@ float lastErr = 0.0;
 
 void drivePID(int dir, int PWR)
 {
-  float targetVal = fieldNorth; //make the setpoint field north
+  float targetVal = fieldNorth + rotOffset; //make the setpoint field north
 
   //float currentVal = readCompass();
   float currentVal = readCompass();
